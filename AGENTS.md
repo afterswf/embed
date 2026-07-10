@@ -23,7 +23,10 @@ packages. This fork carries fixes for them via `patches/` (see below).
 - **`patches/@awayfl+playerglobal+*.patch`** — Flash Remoting (AMF-over-HTTP)
   in `NetConnection`/`Responder`; `MouseCursorData` linked; aggregated
   `EventDispatcher` reports `_t` as `currentTarget` (GreenSock fix);
-  `removeChild` warns instead of throwing #2025 (ticker-killer fix).
+  `removeChild` warns instead of throwing #2025 (ticker-killer fix);
+  `Graphics.lineStyle` clamps alpha to [0,1] like Flash (AS2-era content
+  passes 0-100; unclamped alpha corrupts stroke colours — `beginFill`
+  already clamped, strokes didn't).
 - **`patches/@awayjs+graphics+*.patch`** — thick strokes tessellated to
   triangles (orphaned `getTriangleElements`) so lineStyle joints/caps apply;
   the default LineElements path cannot form joints (per-segment quads).
@@ -33,12 +36,15 @@ packages. This fork carries fixes for them via `patches/` (see below).
   `lib/*.ts` (source of truth, upstreamable) **and** `dist/lib/*.js` (what
   rollup actually bundles — `package.json#module` → `dist/index.js` barrel →
   `dist/lib/**`). Changing only the .ts does nothing to the build.
-- Upstream PRs for both patch sets were submitted (2026-07-10) to
-  `awayfl/playerglobal` (`feat/amf-remoting-and-runtime-fixes`) and
-  `awayfl/avm2` (`fix/proxy-public-mangled-trap-overrides`) from the
-  mesmotronic forks. **When merged & published:** bump the dep versions here,
-  delete the corresponding patch file(s), rebuild. patch-package hard-errors
-  on version mismatch, so a stale patch cannot be applied silently.
+- Upstream PR branches exist for all three patch sets (2026-07-10), pushed
+  from the mesmotronic forks (all with a paste-ready, untracked
+  `PR_DESCRIPTION.md` at the fork root):
+  - `awayfl/playerglobal` ← `feat/amf-remoting-and-runtime-fixes`
+  - `awayfl/avm2` ← `fix/proxy-public-mangled-trap-overrides`
+  - `awayjs/graphics` ← `fix/stroke-joints-triangle-tessellation`
+  **When merged & published:** bump the dep versions here, delete the
+  corresponding patch file(s), rebuild. patch-package hard-errors on version
+  mismatch, so a stale patch cannot be applied silently.
 
 ## Building
 
@@ -78,7 +84,11 @@ library files), so you can't just edit and rebuild in place:
 5. Rebuild runtime, test, then `npx patch-package @awayfl/<pkg>` to capture
 
 tsc output is deterministic — regenerating all of `dist/` produces clean,
-minimal patch-package diffs.
+minimal patch-package diffs. The same workflow works for `@awayjs/*` packages
+(used for the graphics stroke fix). Caveat: `@awayjs/graphics` has a
+pre-existing type error (`AssetEvent.CLEAR`, version skew vs `@awayjs/core`
+typings) — tsc still emits; playerglobal needed its `FileReference` typing
+fixed before anything emitted at all.
 
 ## AVM2 / playerglobal facts that will bite you
 
@@ -104,6 +114,16 @@ minimal patch-package diffs.
   `setTimeout`, i.e. most app `init()`s) are swallowed by an empty `catch {}`
   in playerglobal's Timer tick — a stalled app with a clean console usually
   means a swallowed throw. Instrument that catch when hunting.
+- Flash clamps alpha parameters to [0, 1]; AS2-era content passes 0-100.
+  Anywhere alpha flows into rendering unclamped, colours come out wrong.
+- Runtime-drawn strokes only get joint/cap styles via the triangle
+  tessellation route (see the graphics patch); GPU LineElements are
+  per-segment quads and cannot form joints.
+- Quick instrumentation trick: patch `dist/runtime.js` text directly
+  (python replace on the built bundle) to add gated `console.warn`s — the
+  next rollup rebuild wipes it automatically, so there's nothing to revert.
+  Same trick produced before/after PR screenshots:
+  `git show <old-commit>:dist/runtime.js` → swap in → screenshot → restore.
 
 ## Testing against the reference app
 
@@ -139,3 +159,11 @@ Expected healthy boot: 6 AMF calls (`getChannelList`, `getGenreList`,
 `getProductTypeList`, `getRegionList`, `getFirstDayOfOccWeek`, `authToken`)
 each answered `onResult`, then `NetConnection.Connect.Success`. Wire bytes:
 `window.__awayflAMF.lastRequest/.lastResponse` in the iframe context.
+
+Chart smoke test (needs a valid login — a local dev user exists; ask Neil or
+check the local `users` table): after login you land on Search. Click the
+Artist field (~240,128), type `muse`, click Search (~365,128), click the
+first result (~568,154), then "Weekly sales spot analysis" (~937,188).
+Verify: line colours match the axis label colours (left `#00A0C6`, right
+`#F0037F`), corners of the polylines are sharp miters (no notches), and the
+soft-pink Mkt Trend stays soft (its 0.15 alpha is by design).
