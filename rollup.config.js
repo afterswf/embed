@@ -1,4 +1,4 @@
-import typescript from 'rollup-plugin-typescript2'
+import typescript from '@rollup/plugin-typescript'
 import nodeResolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import terser from '@rollup/plugin-terser';
@@ -99,10 +99,8 @@ export default async (args) => {
 				preventAssignment: true
 			}), 
 			typescript({
-				tsconfigOverride: {
-					compilerOptions: {
-						target: 'es2017'
-					}
+				compilerOptions: {
+					target: 'es2017'
 				}
 			}),
 			nodeResolve({
@@ -130,10 +128,8 @@ export default async (args) => {
 				preventAssignment: true
 			}), 
 			typescript({
-				tsconfigOverride: {
-					compilerOptions: {
-						target: 'es2017'
-					}
+				compilerOptions: {
+					target: 'es2017'
 				}
 			}),
 			nodeResolve({
