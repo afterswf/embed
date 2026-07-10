@@ -24,6 +24,9 @@ packages. This fork carries fixes for them via `patches/` (see below).
   in `NetConnection`/`Responder`; `MouseCursorData` linked; aggregated
   `EventDispatcher` reports `_t` as `currentTarget` (GreenSock fix);
   `removeChild` warns instead of throwing #2025 (ticker-killer fix).
+- **`patches/@awayjs+graphics+*.patch`** — thick strokes tessellated to
+  triangles (orphaned `getTriangleElements`) so lineStyle joints/caps apply;
+  the default LineElements path cannot form joints (per-segment quads).
 - **`patches/@awayfl+avm2+*.patch`** — Proxy trap dispatch falls back to
   public-mangled (`$Bg…`) subclass overrides; receiver preserved.
 - Applied by `postinstall` (patch-package). Each patch changes **both**

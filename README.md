@@ -23,6 +23,12 @@ AwayFL helps you save your Flash games and keep them running after 2020!
 >   * `DisplayObjectContainer.removeChild`: no longer throws #2025 when the internal
 >     scene graph has already detached the child — the throw could erupt through a frame
 >     callback and kill the ticker.
+> * **`@awayjs/graphics`**
+>   * Thick strokes (>1.5px, non-hairline) are tessellated to triangles via the
+>     existing (previously unused) `getTriangleElements`, so `lineStyle` joint
+>     styles (miter/bevel/round) and caps actually apply. The GPU-expanded
+>     LineElements path draws each segment as an independent quad and leaves a
+>     notch at every corner of a polyline.
 > * **`@awayfl/avm2`**
 >   * `Proxy` (flash.utils.Proxy): trap dispatch now finds subclass overrides whose
 >     traits were mangled into the public namespace (`$Bg…`) instead of the flash_proxy
