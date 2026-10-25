@@ -68,8 +68,11 @@ their `prepare` scripts:
 npx yarn@1 install --frozen-lockfile
 ```
 
-To build without the sibling checkouts, point the packages at GitHub instead
-(`"@awayfl/avm2": "github:afterswf/avm2#main"` etc.), and npm will clone, build and pack them.
+To build without the sibling checkouts, point the packages at the published forks instead
+(`"@awayfl/avm2": "npm:@afterswf/avm2@^0.2.241"` etc.), or at GitHub for unreleased changes
+(`"@awayfl/avm2": "github:afterswf/avm2#main"` etc.), which npm will clone, build and pack.
+
+To publish a release, follow [RELEASING.md](./RELEASING.md).
 
 The build uses the official `@rollup/plugin-typescript` instead of `rollup-plugin-typescript2`, which fails
 with current versions of Node and rollup, and pins rollup and TypeScript to versions known to work.
