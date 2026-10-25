@@ -9,8 +9,7 @@
     "prebuild": "npm run clean && npm run static",
     "build": "rollup -c --bundleConfigAsCjs",
     "version": " npm run build",
-    "postversion": "git commit -a -m Build && git push origin --all && git push origin --tags",
-    "postinstall": "patch-package"
+    "postversion": "git commit -a -m Build && git push origin --all && git push origin --tags"
   },
   "keywords": [
     "Flash",
@@ -25,12 +24,12 @@
   },
   "dependencies": {
     "@awayfl/avm1": "^0.2.167",
-    "@awayfl/avm2": "^0.2.210",
+    "@awayfl/avm2": "file:../avm2",
     "@awayfl/awayfl-player": "^0.2.40",
-    "@awayfl/playerglobal": "^0.2.386",
+    "@awayfl/playerglobal": "file:../playerglobal",
     "@awayfl/swf-loader": "^0.4.121",
     "@awayjs/core": "^0.9.44",
-    "@awayjs/graphics": "^0.5.82",
+    "@awayjs/graphics": "file:../graphics",
     "@awayjs/materials": "^0.6.16",
     "@awayjs/renderer": "^0.11.63",
     "@awayjs/scene": "^0.13.264",
@@ -48,24 +47,23 @@
     "@rollup/plugin-typescript": "^12.3.0",
     "@types/wicg-file-system-access": "^2023.10.7",
     "copyfiles": "^2.4.1",
-    "patch-package": "^8.0.1",
     "rimraf": "^5.0.5",
     "rollup": "4.6.1",
     "rollup-plugin-typescript2": "^0.36.0",
     "typescript": "5.3.3"
   },
   "lastUsedTags": {
-    "@awayfl/avm1": "v0.2.181",
-    "@awayfl/avm2": "v0.2.240",
-    "@awayfl/awayfl-player": "v0.2.54",
-    "@awayfl/playerglobal": "v0.2.455",
-    "@awayfl/swf-loader": "v0.4.135",
-    "@awayjs/core": "v0.9.60",
+    "@awayfl/avm1": "v0.1.4",
+    "@awayfl/avm2": "v0.2.241",
+    "@awayfl/awayfl-player": "v0.1.4",
+    "@awayfl/playerglobal": "v0.2.460",
+    "@awayfl/swf-loader": "v0.1.4",
+    "@awayjs/core": "v0.1.4",
     "@awayjs/graphics": "v0.5.101",
-    "@awayjs/materials": "v0.6.24",
-    "@awayjs/renderer": "v0.11.99",
-    "@awayjs/scene": "v0.13.324",
-    "@awayjs/stage": "v0.11.172",
-    "@awayjs/view": "v0.6.90"
+    "@awayjs/materials": "v0.1.4",
+    "@awayjs/renderer": "v0.1.4",
+    "@awayjs/scene": "v0.1.4",
+    "@awayjs/stage": "v0.1.4",
+    "@awayjs/view": "v0.1.4"
   }
 }

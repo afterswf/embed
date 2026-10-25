@@ -9,6 +9,10 @@ import fs from 'fs';
 
 const p = require('./package.json');
 
+// Some deps are linked local checkouts with their own node_modules, so shared
+// packages must always resolve from here or the bundle gets duplicate copies
+const dedupe = (importee) => /^(@(awayfl|awayjs)\/|tslib(\/|$))/.test(importee);
+
 export default async (args) => {
 	const VERSION = p.version;
 	const DEPS = p.dependencies;
@@ -104,7 +108,8 @@ export default async (args) => {
 				}
 			}),
 			nodeResolve({
-				mainFields: ['jsnext', 'module']
+				mainFields: ['jsnext', 'module'],
+				dedupe
 			}),
 			commonjs({
 				include: /node_modules/,
@@ -133,7 +138,8 @@ export default async (args) => {
 				}
 			}),
 			nodeResolve({
-				mainFields: ['jsnext', 'module']
+				mainFields: ['jsnext', 'module'],
+				dedupe
 			}),
 			commonjs({
 				include: /node_modules/,
@@ -161,7 +167,8 @@ export default async (args) => {
 			typescript({
 			}),
 			nodeResolve({
-				mainFields: ['jsnext', 'module']
+				mainFields: ['jsnext', 'module'],
+				dedupe
 			}),
 			commonjs({
 				include: /node_modules/

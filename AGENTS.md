@@ -1,4 +1,4 @@
-# Agent notes — awayfl-embed (mesmotronic fork)
+# Agent notes — awayfl-embed (afterswf fork)
 
 Context for AI agents (and humans) working in this repo. Written after a long
 debugging campaign reviving a real AS3 app ("The Music Machine") on this
@@ -16,40 +16,60 @@ almost no runtime code itself:
 - `static/` → `dist/assets/` (playerglobal builtins ABCs, fonts.swf, splash)
 
 Runtime bugs are almost never in this repo — they're in the dependency
-packages. This fork carries fixes for them via `patches/` (see below).
+packages. This fork's fixes live in the afterswf forks of three of them
+(see below).
 
-## Fork state (branch `feat/net`)
+## Fork state
 
-- **`patches/@awayfl+playerglobal+*.patch`** — Flash Remoting (AMF-over-HTTP)
-  in `NetConnection`/`Responder`; `MouseCursorData` linked; aggregated
+The fixes are on `main` of the [afterswf](https://github.com/afterswf) forks
+(future npm names `@afterswf/avm2`, `@afterswf/graphics`,
+`@afterswf/playerglobal`):
+
+- **playerglobal** — Flash Remoting (AMF-over-HTTP) in
+  `NetConnection`/`Responder`; `MouseCursorData` linked; aggregated
   `EventDispatcher` reports `_t` as `currentTarget` (GreenSock fix);
   `removeChild` warns instead of throwing #2025 (ticker-killer fix);
   `Graphics.lineStyle` clamps alpha to [0,1] like Flash (AS2-era content
   passes 0-100; unclamped alpha corrupts stroke colours — `beginFill`
   already clamped, strokes didn't).
-- **`patches/@awayjs+graphics+*.patch`** — thick strokes tessellated to
-  triangles (orphaned `getTriangleElements`) so lineStyle joints/caps apply;
-  the default LineElements path cannot form joints (per-segment quads).
-- **`patches/@awayfl+avm2+*.patch`** — Proxy trap dispatch falls back to
-  public-mangled (`$Bg…`) subclass overrides; receiver preserved.
-- Applied by `postinstall` (patch-package). Each patch changes **both**
-  `lib/*.ts` (source of truth, upstreamable) **and** `dist/lib/*.js` (what
-  rollup actually bundles — `package.json#module` → `dist/index.js` barrel →
-  `dist/lib/**`). Changing only the .ts does nothing to the build.
-- Upstream PR branches exist for all three patch sets (2026-07-10), pushed
-  from the mesmotronic forks (all with a paste-ready, untracked
-  `PR_DESCRIPTION.md` at the fork root):
-  - `awayfl/playerglobal` ← `feat/amf-remoting-and-runtime-fixes`
-  - `awayfl/avm2` ← `fix/proxy-public-mangled-trap-overrides`
-  - `awayjs/graphics` ← `fix/stroke-joints-triangle-tessellation`
-  **When merged & published:** bump the dep versions here, delete the
-  corresponding patch file(s), rebuild. patch-package hard-errors on version
-  mismatch, so a stale patch cannot be applied silently.
+- **graphics** — thick strokes tessellated to triangles (orphaned
+  `getTriangleElements`) so lineStyle joints/caps apply; the default
+  LineElements path cannot form joints (per-segment quads).
+- **avm2** — Proxy trap dispatch falls back to public-mangled (`$Bg…`)
+  subclass overrides; receiver preserved.
+
+How they get into the bundle:
+
+- `package.json` keeps the **original dependency names** (`@awayfl/avm2`,
+  `@awayjs/graphics`, `@awayfl/playerglobal`) but points them at sibling
+  checkouts (`file:../avm2` etc.), so npm links them as aliases
+  (`npm ls` shows `@awayfl/avm2@npm:@afterswf/avm2 -> ./../avm2`). Keeping
+  the old names means this repo *and* every unforked package that imports
+  them (avm1, awayfl-player, swf-loader, scene, …) resolve to the one fork.
+- **When `@afterswf/*` is on npm:** change each spec to an npm alias, e.g.
+  `"@awayfl/avm2": "npm:@afterswf/avm2@^0.2.241"` — nothing else changes.
+- rollup bundles `package.json#module` → `dist/index.js` → `dist/lib/**` of
+  each checkout, so **each checkout must be built** (its `dist/` is
+  gitignored). Changing only `lib/*.ts` does nothing to this build.
+- Linked checkouts carry their own `node_modules` (older `@awayjs/*` pinned
+  by their `yarn.lock`). `rollup.config.js` `dedupe`s every `@awayfl/*`,
+  `@awayjs/*` and `tslib` import to this repo's `node_modules`, and
+  `tsconfig.json` `paths` does the same for type-checking — without these
+  the bundle gets duplicate copies (and TS reports bogus `IAVMHandler`
+  mismatches between the two `@awayjs/scene`s).
+- Upstream PR branches exist for all three fix sets (2026-07-10):
+  - `awayfl/playerglobal` ← `feat/amf-remoting-and-runtime-fixes` (#25)
+  - `awayfl/avm2` ← `fix/proxy-public-mangled-trap-overrides` (#13)
+  - `awayjs/graphics` ← `fix/stroke-joints-triangle-tessellation` (#12)
 
 ## Building
 
 ```sh
-npm install          # postinstall applies patches/
+# once per checkout, in each of ../avm2, ../graphics, ../playerglobal
+# (tsc:build ignores the type errors their stale yarn.lock pins cause; JS still emits)
+npx yarn@1 install --frozen-lockfile && npm run tsc:build
+
+npm install          # links the checkouts
 npm run build        # all three bundles + assets (prebuild cleans + copies static/)
 npx rollup -c --bundleConfigAsCjs --runtime   # runtime.js only (~12 s) — use during iteration
 ```
@@ -68,27 +88,23 @@ Gotchas:
 - `package-lock.json` is **gitignored** in this repo, so the exact pins in
   `package.json` are the only reproducibility mechanism.
 
-## Editing the dependency packages (the `.build-tmp` workflow)
+## Editing the dependency packages
 
-`tsc` refuses to emit for files under `node_modules` (treats them as external
-library files), so you can't just edit and rebuild in place:
+Edit the forked packages in their own checkouts, not in `node_modules`:
 
-1. `cp -r node_modules/@awayfl/<pkg> .build-tmp/` (gitignored dir; ancestor
-   `node_modules` still resolves imports from there)
-2. Edit `lib/**/*.ts` in the copy
-3. `../../node_modules/.bin/tsc -p tsconfig.build.json` in the copy —
-   `tsconfig.build.json` just adds `"ignoreDeprecations": "5.0"`; the root
-   devDeps include `@types/wicg-file-system-access` which playerglobal needs
-4. `rsync -a .build-tmp/<pkg>/lib/ node_modules/@awayfl/<pkg>/lib/` and same
-   for `dist/`
-5. Rebuild runtime, test, then `npx patch-package @awayfl/<pkg>` to capture
+1. Edit `lib/**/*.ts` in `../avm2`, `../graphics` or `../playerglobal`
+   (commit there, on a branch merged into its `main`)
+2. `npm run tsc:build` in that checkout (or `npm run watch` while iterating)
+3. Rebuild the runtime here and test
 
-tsc output is deterministic — regenerating all of `dist/` produces clean,
-minimal patch-package diffs. The same workflow works for `@awayjs/*` packages
-(used for the graphics stroke fix). Caveat: `@awayjs/graphics` has a
-pre-existing type error (`AssetEvent.CLEAR`, version skew vs `@awayjs/core`
-typings) — tsc still emits; playerglobal needed its `FileReference` typing
-fixed before anything emitted at all.
+Packages that aren't forked yet (avm1, swf-loader, scene, …) need forking
+into afterswf first, then adding as another `file:` alias plus a checkout.
+
+Caveat: graphics and playerglobal report dozens of type errors against the
+older `@awayjs/*`/`@awayfl/avm2` versions their `yarn.lock` pins (e.g.
+`Int32Vector`, `IContainer`, `readGraphicsData` missing). They're version
+skew only — tsc still emits, and the bundle resolves those imports to the
+current packages here.
 
 ## AVM2 / playerglobal facts that will bite you
 
@@ -107,7 +123,7 @@ fixed before anything emitted at all.
   `lib/SecurityDomain.ts`.
 - Public-namespace mangling is `$Bg<name>`; namespaced traits hash the URI
   (e.g. flash_proxy → `$G_v0hLC<name>`). ABC interning can put subclass
-  overrides on the public mangling — the cause of the Proxy patch.
+  overrides on the public mangling — the cause of the Proxy fix.
 - `(a || b)(args)` **loses `this`** — a receiver-dropping bug like this cost
   hours; use `.call(this, …)` when dispatching looked-up methods.
 - Debugging: exceptions inside Timer-driven AS3 (incl. anything started via
@@ -117,7 +133,7 @@ fixed before anything emitted at all.
 - Flash clamps alpha parameters to [0, 1]; AS2-era content passes 0-100.
   Anywhere alpha flows into rendering unclamped, colours come out wrong.
 - Runtime-drawn strokes only get joint/cap styles via the triangle
-  tessellation route (see the graphics patch); GPU LineElements are
+  tessellation route (see the graphics fix); GPU LineElements are
   per-segment quads and cannot form joints.
 - Quick instrumentation trick: patch `dist/runtime.js` text directly
   (python replace on the built bundle) to add gated `console.warn`s — the

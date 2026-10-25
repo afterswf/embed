@@ -4,6 +4,10 @@
     "target": "es5",
     "module": "es2015",
     "moduleResolution": "node",
+    "paths": {
+      "@awayfl/*": ["./node_modules/@awayfl/*"],
+      "@awayjs/*": ["./node_modules/@awayjs/*"]
+    },
     "sourceMap": false,
     "outDir": "./dist",
     "experimentalDecorators":true

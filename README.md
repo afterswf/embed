@@ -2,11 +2,21 @@ AwayFL Embedded Player
 ==================
 AwayFL helps you save your Flash games and keep them running after 2020!
 
-> **Fork notes (feat/net):** this fork adds Flash Remoting (AMF-over-HTTP) support and
-> several runtime fixes, applied to the `@awayfl/*` dependencies via
-> [`patch-package`](https://www.npmjs.com/package/patch-package) (see [`patches/`](./patches)
-> — each patch modifies both the package's `lib/*.ts` source, ready for an upstream PR,
-> and the compiled `dist/lib/*.js` that this repo bundles):
+> **Fork notes:** this fork adds Flash Remoting (AMF-over-HTTP) support and several
+> runtime fixes, which live in the [afterswf](https://github.com/afterswf) forks of
+> [`avm2`](https://github.com/afterswf/avm2), [`graphics`](https://github.com/afterswf/graphics)
+> and [`playerglobal`](https://github.com/afterswf/playerglobal). Until those are published
+> to npm as `@afterswf/*`, `package.json` aliases `@awayfl/avm2`, `@awayjs/graphics` and
+> `@awayfl/playerglobal` to local checkouts in sibling folders (`../avm2` etc.), so this
+> repo and every `@awayfl/*`/`@awayjs/*` package it bundles use the forks. Each checkout
+> must be installed and built (`dist/`) before building here:
+>
+> ```sh
+> # in each of ../avm2, ../graphics, ../playerglobal
+> npx yarn@1 install --frozen-lockfile && npm run tsc:build
+> ```
+>
+> Fixes included:
 >
 > * **`@awayfl/playerglobal`**
 >   * `flash.net.NetConnection`: working `connect()`/`call()` for HTTP(S) AMF remoting
