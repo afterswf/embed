@@ -41,7 +41,12 @@ The fixes are on `main` of the [afterswf](https://github.com/afterswf) forks
   variables before any ActionScript runs (so `#initclip` code sees them);
   AS2 `ExternalInterface` goes through swf-loader's `ExternalInterfaceService`
   like AS3's, converting values both ways.
-- **playerglobal** — `LoaderInfo.parameters` (URL query string + config
+- **playerglobal** — `lineStyle` maps AS3's caps/joints strings to
+  `@awayjs/graphics`' numeric `CapsStyle`/`JointStyle` (they were passed
+  through as strings, so every AS3 thick stroke got bevel joints and no
+  caps), defaulting to Flash's round caps and joints, and clamps
+  `miterLimit` to [1, 255]; `readGraphicsData` maps them back.
+  `LoaderInfo.parameters` (URL query string + config
   `flashvars`); `ExternalInterface` callbacks return JS values, not JS
   source strings, and strings are escaped safely for `call()`; Flash
   Remoting (AMF-over-HTTP) in `NetConnection`/`Responder`; `MouseCursorData`
