@@ -50,7 +50,15 @@ How they get into the bundle:
   `"@awayfl/avm2": "npm:@afterswf/avm2@^0.2.241"` — nothing else changes.
 - rollup bundles `package.json#module` → `dist/index.js` → `dist/lib/**` of
   each checkout, so **each checkout must be built** (its `dist/` is
-  gitignored). Changing only `lib/*.ts` does nothing to this build.
+  gitignored). Their `prepare` script (`tsc:build`) runs on every
+  `npm install` here, but not on `npm run build` — after editing a checkout,
+  rerun `npm run tsc:build` there (or keep `npm run watch` going). Changing
+  only `lib/*.ts` does nothing to this build.
+- **Without sibling checkouts** (CI, another machine): use
+  `"@awayfl/avm2": "github:afterswf/avm2#main"` etc. npm clones each fork,
+  installs its devDeps, runs `prepare` and packs the result (`.npmignore`
+  keeps `dist/`). Fork changes only arrive after a push and
+  `npm update @awayfl/avm2`.
 - Linked checkouts carry their own `node_modules` (older `@awayjs/*` pinned
   by their `yarn.lock`). `rollup.config.js` `dedupe`s every `@awayfl/*`,
   `@awayjs/*` and `tslib` import to this repo's `node_modules`, and
@@ -66,10 +74,9 @@ How they get into the bundle:
 
 ```sh
 # once per checkout, in each of ../avm2, ../graphics, ../playerglobal
-# (tsc:build ignores the type errors their stale yarn.lock pins cause; JS still emits)
-npx yarn@1 install --frozen-lockfile && npm run tsc:build
+npx yarn@1 install --frozen-lockfile
 
-npm install          # links the checkouts
+npm install          # links the checkouts and builds their dist/ (prepare → tsc:build)
 npm run build        # all three bundles + assets (prebuild cleans + copies static/)
 npx rollup -c --bundleConfigAsCjs --runtime   # runtime.js only (~12 s) — use during iteration
 ```
@@ -94,7 +101,8 @@ Edit the forked packages in their own checkouts, not in `node_modules`:
 
 1. Edit `lib/**/*.ts` in `../avm2`, `../graphics` or `../playerglobal`
    (commit there, on a branch merged into its `main`)
-2. `npm run tsc:build` in that checkout (or `npm run watch` while iterating)
+2. `npm run tsc:build` in that checkout (or `npm run watch` while iterating;
+   `tsc:build` ignores the type errors described below, so JS still emits)
 3. Rebuild the runtime here and test
 
 Packages that aren't forked yet (avm1, swf-loader, scene, …) need forking

@@ -8,13 +8,17 @@ AwayFL helps you save your Flash games and keep them running after 2020!
 > and [`playerglobal`](https://github.com/afterswf/playerglobal). Until those are published
 > to npm as `@afterswf/*`, `package.json` aliases `@awayfl/avm2`, `@awayjs/graphics` and
 > `@awayfl/playerglobal` to local checkouts in sibling folders (`../avm2` etc.), so this
-> repo and every `@awayfl/*`/`@awayjs/*` package it bundles use the forks. Each checkout
-> must be installed and built (`dist/`) before building here:
+> repo and every `@awayfl/*`/`@awayjs/*` package it bundles use the forks. Install each
+> checkout's dependencies first; `npm install` here then builds their `dist/` via their
+> `prepare` scripts:
 >
 > ```sh
 > # in each of ../avm2, ../graphics, ../playerglobal
-> npx yarn@1 install --frozen-lockfile && npm run tsc:build
+> npx yarn@1 install --frozen-lockfile
 > ```
+>
+> To build without sibling checkouts, point the aliases at GitHub instead
+> (`"@awayfl/avm2": "github:afterswf/avm2#main"` etc.) — npm clones, builds and packs them.
 >
 > Fixes included:
 >
