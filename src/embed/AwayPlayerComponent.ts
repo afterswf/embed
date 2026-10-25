@@ -11,9 +11,9 @@ interface IAwayPlayer {
     stop(): void;
 }
 
-const scriptSrc = (<HTMLScriptElement>document.currentScript).src;
-const scriptBaseUrl = new URL('.', scriptSrc).href;
-const defaultSplashUrl = new URL('./assets/splash.jpg', scriptBaseUrl).href;
+// rollup turns import.meta.url into document.currentScript's src in the classic
+// script build; in the ES module build it's the module's own URL
+const scriptBaseUrl = new URL('.', import.meta.url).href;
 const defaultProgress = {
     "direction": "lr",
     "back": "#130d02",
@@ -171,7 +171,8 @@ export class AwayPlayerComponent extends HTMLElement {
         backgroundColor: {required: false, default: 'black'},
         bgcolor: {required: false},
         flashvars: {required: false},
-        splash: {required: false, default: defaultSplashUrl},
+        // defaults to the splash in runtimeBaseUrl's assets
+        splash: {required: false},
         progress: {required: false, default: defaultProgress},
 
         // runtime
@@ -419,10 +420,30 @@ export class AwayPlayerComponent extends HTMLElement {
     _normalizeConfig() {
         const config = this._runConfig;
 
+        // absolute and ending in a slash, so the runtime's files resolve inside it
+        config.runtimeBaseUrl = new URL(config.runtimeBaseUrl.replace(/\/?$/, '/'), document.baseURI).href;
+
+        if (config.splash === undefined) {
+            config.splash = new URL('assets/splash.jpg', config.runtimeBaseUrl).href;
+        }
+
         config.scaleMode = SCALE_MODES[('' + config.scaleMode).toLowerCase()] || config.scaleMode;
 
         if (config.stageAlign) {
             config.stageAlign = normalizeAlign(config.stageAlign) || undefined;
+        }
+
+        // params and attributes are strings, but "false" shouldn't mean true
+        for (const key of ['autoplay', 'hideBeforeLoad', 'smoothBitmaps', 'enableBlends', 'enableFilters']) {
+            if (typeof config[key] === 'string') {
+                config[key] = !/^(false|0)$/i.test(config[key].trim());
+            }
+        }
+        if (config.splash === 'false') {
+            config.splash = false;
+        }
+        if (<any>config.progress === 'false') {
+            config.progress = false;
         }
 
         if (config.bgcolor) {
@@ -490,4 +511,7 @@ export class AwayPlayerComponent extends HTMLElement {
     }
 }
 
-customElements.define('awayfl-player', AwayPlayerComponent);
+// both the script and module builds may be loaded
+if (!customElements.get('awayfl-player')) {
+    customElements.define('awayfl-player', AwayPlayerComponent);
+}

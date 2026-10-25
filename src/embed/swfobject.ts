@@ -38,6 +38,11 @@ function getElement(id: string | HTMLElement): HTMLElement {
     return typeof id === 'string' ? document.getElementById(id) : id;
 }
 
+// by tag, as the element may be another build's class if both are loaded
+function isPlayer(el: Element): el is AwayPlayerComponent {
+    return !!el && el.localName === 'awayfl-player';
+}
+
 export function addDomLoadEvent(fn: () => void) {
     if (isDomLoaded()) {
         fn();
@@ -221,7 +226,7 @@ function registerObject(objectIdStr: string, swfVersionStr: string, _xiSwfUrlStr
             let ref = document.getElementById(objectIdStr);
 
             // may already have been upgraded with the rest of the page's markup
-            if (ref && !(ref instanceof AwayPlayerComponent)) {
+            if (ref && !isPlayer(ref)) {
                 ref = isFlashElement(ref) ? upgradeElement(ref) : null;
             }
 
@@ -238,13 +243,13 @@ function registerObject(objectIdStr: string, swfVersionStr: string, _xiSwfUrlStr
 
 function getObjectById(objectIdStr: string): AwayPlayerComponent {
     const el = document.getElementById(objectIdStr);
-    return el instanceof AwayPlayerComponent ? el : null;
+    return isPlayer(el) ? el : null;
 }
 
 function removeSWF(objElemIdStr: string) {
     const el = document.getElementById(objElemIdStr);
 
-    if (el && (el instanceof AwayPlayerComponent || isFlashElement(el))) {
+    if (el && (isPlayer(el) || isFlashElement(el))) {
         el.remove();
     }
 }

@@ -15,7 +15,8 @@ const dedupe = (importee) => /^(@(awayfl|awayjs)\/|tslib(\/|$))/.test(importee);
 
 export default async (args) => {
 	const VERSION = p.version;
-	const DEPS = p.dependencies;
+	// bundled into dist, so devDependencies as far as npm is concerned
+	const DEPS = Object.assign({}, p.dependencies, p.devDependencies);
 	const REAL_VERS = {};
 
 	const depsRegister = Object.keys(DEPS)
@@ -74,6 +75,8 @@ export default async (args) => {
 	releaseLogsMapped.push('\n---\n');
 
 	fs.writeFileSync('./dist/VERSIONS.txt', versionMapped.join('\n') + '\n');
+	// @afterswf/embed/version, without the main module's side effects (e.g. for server rendering)
+	fs.writeFileSync('./dist/version.mjs', `export const VERSION = '${VERSION}';\n`);
 
 	const data = fs.readFileSync('./HISTORY.txt', 'utf8');
 
@@ -87,12 +90,16 @@ export default async (args) => {
 	//return;
 	const EMBED_CONFIG = {
 		input: './src/embed/index.ts',
-		output: {
+		output: [{
 			sourcemap: true,
 			format: 'iife',
 			name: 'AwayEmbed',
 			file: './dist/embed.js'
-		},
+		}, {
+			sourcemap: true,
+			format: 'es',
+			file: './dist/embed.mjs'
+		}],
 		plugins: [
 			string({
 				include: "**/*.html",

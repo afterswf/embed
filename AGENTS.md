@@ -9,7 +9,13 @@ player; most of the non-obvious facts below were learned the hard way.
 Bundler/wrapper around the `@awayfl/*` + `@awayjs/*` **npm packages**. It owns
 almost no runtime code itself:
 
-- `src/embed/` → `dist/embed.js` — runs in the host page:
+- `src/embed/` → `dist/embed.js` (classic script) and `dist/embed.mjs` (ES
+  module exporting `swfobject`/`swfObject`, `SWFObject`,
+  `AwayPlayerComponent` and `configure()`; both also set the globals) — runs
+  in the host page. Hand-written types for the module are in
+  `types/index.d.ts`; keep them in step with the exports.
+  - `index.ts` — exports, globals, and starting the auto-upgrade a tick after
+    DOM ready (so an importing module can `configure()` first)
   - `AwayPlayerComponent.ts` — `<awayfl-player>` custom element; maps Flash
     params/attributes (`flashvars`, `bgcolor`, `scale`, `salign`, `movie`…)
     onto its config and renders the player in a same-origin `srcdoc` iframe
@@ -128,6 +134,21 @@ Gotchas:
   "upgrade" casually.
 - `package-lock.json` is **gitignored** in this repo, so the exact pins in
   `package.json` are the only reproducibility mechanism.
+- The player finds `loader.js`, `runtime.js` and `assets/` from its own URL
+  (`import.meta.url`, which rollup compiles to `document.currentScript` for
+  `embed.js`), or `runtimeBaseUrl`. Loaded from esm.sh, the module isn't next
+  to them, so `runtimeBaseUrl` must point at a CDN serving the package's
+  files as they are (jsDelivr).
+
+## Publishing
+
+Everything embed bundles is a `devDependency`, since `dist/` is
+self-contained, so its `file:../` specs don't affect people installing it.
+`dist/` is committed and rebuilt by `npm version`. The forks don't commit
+`dist/`/`bundle/`; their `prepublishOnly` runs the full build (tsc + the UMD
+bundle that `main` points at). All have `publishConfig.access: public`.
+Publish the forks in dependency order (renderer → graphics → scene → avm2 →
+avm1 → playerglobal), then embed.
 
 ## Editing the dependency packages
 

@@ -1,8 +1,27 @@
 {
   "name": "@afterswf/embed",
   "version": "0.1.4",
-  "description": "Embedded AwayFL Player for static publishing",
-  "main": "index.js",
+  "description": "AfterSWF: plays Flash content in the browser as a drop-in replacement for SWFObject, based on AwayFL",
+  "main": "dist/embed.js",
+  "module": "dist/embed.mjs",
+  "types": "types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "import": "./dist/embed.mjs",
+      "default": "./dist/embed.js"
+    },
+    "./version": {
+      "types": "./types/version.d.ts",
+      "default": "./dist/version.mjs"
+    },
+    "./dist/*": "./dist/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "types"
+  ],
   "scripts": {
     "clean": "rimraf --glob ./dist/*",
     "static": "copyfiles -u 1 './static/**/*' ./dist/assets/",
@@ -12,16 +31,25 @@
   },
   "keywords": [
     "Flash",
+    "SWF",
+    "SWFObject",
     "AwayFL",
-    "SWF"
+    "AfterSWF"
   ],
   "author": "eXponenta",
   "license": "MIT",
-  "repository": "https://github.com/awayfl/awayfl-embed",
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com/"
+  "homepage": "https://github.com/afterswf/embed#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/afterswf/embed.git"
   },
-  "dependencies": {
+  "bugs": {
+    "url": "https://github.com/afterswf/embed/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
     "@awayfl/avm1": "file:../avm1",
     "@awayfl/avm2": "file:../avm2",
     "@awayfl/awayfl-player": "^0.2.40",
@@ -34,11 +62,6 @@
     "@awayjs/scene": "file:../scene",
     "@awayjs/stage": "^0.11.138",
     "@awayjs/view": "^0.6.61",
-    "random-seed": "^0.3.0",
-    "rollup-plugin-string": "^3.0.0",
-    "tslib": "^2.6.2"
-  },
-  "devDependencies": {
     "@rollup/plugin-commonjs": "^25.0.7",
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-replace": "^5.0.5",
@@ -46,9 +69,12 @@
     "@rollup/plugin-typescript": "^12.3.0",
     "@types/wicg-file-system-access": "^2023.10.7",
     "copyfiles": "^2.4.1",
+    "random-seed": "^0.3.0",
     "rimraf": "^5.0.5",
     "rollup": "4.6.1",
+    "rollup-plugin-string": "^3.0.0",
     "rollup-plugin-typescript2": "^0.36.0",
+    "tslib": "^2.6.2",
     "typescript": "5.3.3"
   },
   "lastUsedTags": {

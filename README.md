@@ -30,6 +30,33 @@ better drop-in replacement for the original SWFObject.
 | Mouse cursors | `flash.ui.MouseCursorData` is available, so `Mouse.registerCursor` works | [playerglobal](https://github.com/afterswf/playerglobal) |
 | Removing children | `removeChild` no longer throws error #2025 for children that have already been detached internally, which could stop playback | [playerglobal](https://github.com/afterswf/playerglobal) |
 
+### Using it as a module
+
+The embed script is also an ES module, which exports `swfobject` (and `swfObject`), `SWFObject`,
+`AwayPlayerComponent` and `configure()`. For example, using [esm.sh](https://esm.sh):
+
+```html
+<div id="game"></div>
+
+<script type="module">
+  import { swfobject, configure } from 'https://esm.sh/@afterswf/embed';
+
+  // the player loads its runtime and assets by URL, so point it at a CDN that serves the package's files as they are
+  configure({ runtimeBaseUrl: 'https://cdn.jsdelivr.net/npm/@afterswf/embed/dist/' });
+
+  swfobject.embedSWF('game.swf', 'game', 550, 400, '9.0.0', null, { level: 1 });
+</script>
+```
+
+Use the same version in both URLs, e.g. `@afterswf/embed@x.y.z`, so they don't drift apart.
+
+If you import from jsDelivr instead (`https://cdn.jsdelivr.net/npm/@afterswf/embed/dist/embed.mjs`), you don't
+need to set `runtimeBaseUrl`, as the runtime is next to the module. With a bundler, install
+`@afterswf/embed` and either serve its `dist/` folder or point `runtimeBaseUrl` at it.
+
+Importing it also defines the global `swfobject`, so existing scripts on the page keep working, and
+`configure()` takes the same options as `AWAY_EMBED_CFG`.
+
 ### Building
 
 The fixes live in the [afterswf](https://github.com/afterswf) forks of avm1, avm2, graphics, playerglobal,

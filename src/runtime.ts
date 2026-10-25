@@ -39,16 +39,19 @@ export class Player extends AVMStage {
             this._gameConfig.files = [];
         }
 
+        // with a single slash, as CDNs may not accept "dist//assets"
+        const baseUrl = conf?.baseUrl ? conf.baseUrl.replace(/\/?$/, '/') : '';
+
         this._gameConfig.files.push(
             {
-                path:  `${(conf?.baseUrl ? conf?.baseUrl + "/" : "")}assets/fonts.swf`,
+                path: `${baseUrl}assets/fonts.swf`,
                 resourceType: <any>"FONTS"
             },
         );
 
-        if (conf?.baseUrl) {
+        if (baseUrl) {
             // builtins located in assets
-            PlayerGlobal.builtinsBaseUrl = conf.baseUrl + '/assets/builtins';
+            PlayerGlobal.builtinsBaseUrl = baseUrl + 'assets/builtins';
         }
 
         const stageColor = this._gameConfig.stageColor;
