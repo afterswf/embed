@@ -31,7 +31,7 @@
     "@awayjs/graphics": "file:../graphics",
     "@awayjs/materials": "^0.6.16",
     "@awayjs/renderer": "^0.11.63",
-    "@awayjs/scene": "^0.13.264",
+    "@awayjs/scene": "file:../scene",
     "@awayjs/stage": "^0.11.138",
     "@awayjs/view": "^0.6.61",
     "random-seed": "^0.3.0",
@@ -61,7 +61,7 @@
     "@awayjs/graphics": "v0.5.101",
     "@awayjs/materials": "v0.1.4",
     "@awayjs/renderer": "v0.1.4",
-    "@awayjs/scene": "v0.1.4",
+    "@awayjs/scene": "v0.13.325",
     "@awayjs/stage": "v0.1.4",
     "@awayjs/view": "v0.1.4"
   }

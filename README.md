@@ -5,16 +5,17 @@ AwayFL helps you save your Flash games and keep them running after 2020!
 > **Fork notes:** this fork adds Flash Remoting (AMF-over-HTTP) support and several
 > runtime fixes, which live in the [afterswf](https://github.com/afterswf) forks of
 > [`avm1`](https://github.com/afterswf/avm1), [`avm2`](https://github.com/afterswf/avm2),
-> [`graphics`](https://github.com/afterswf/graphics) and
-> [`playerglobal`](https://github.com/afterswf/playerglobal). Until those are published
+> [`graphics`](https://github.com/afterswf/graphics),
+> [`playerglobal`](https://github.com/afterswf/playerglobal) and
+> [`scene`](https://github.com/afterswf/scene). Until those are published
 > to npm as `@afterswf/*`, `package.json` aliases `@awayfl/avm1`, `@awayfl/avm2`,
-> `@awayjs/graphics` and `@awayfl/playerglobal` to local checkouts in sibling folders
-> (`../avm1` etc.), so this repo and every `@awayfl/*`/`@awayjs/*` package it bundles use
-> the forks. Install each checkout's dependencies first; `npm install` here then builds
-> their `dist/` via their `prepare` scripts:
+> `@awayjs/graphics`, `@awayfl/playerglobal` and `@awayjs/scene` to local checkouts in
+> sibling folders (`../avm1` etc.), so this repo and every `@awayfl/*`/`@awayjs/*` package
+> it bundles use the forks. Install each checkout's dependencies first; `npm install` here
+> then builds their `dist/` via their `prepare` scripts:
 >
 > ```sh
-> # in each of ../avm1, ../avm2, ../graphics, ../playerglobal
+> # in each of ../avm1, ../avm2, ../graphics, ../playerglobal, ../scene
 > npx yarn@1 install --frozen-lockfile
 > ```
 >

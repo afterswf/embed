@@ -28,14 +28,14 @@ almost no runtime code itself:
 - `static/` → `dist/assets/` (playerglobal builtins ABCs, fonts.swf, splash)
 
 Runtime bugs are almost never in this repo — they're in the dependency
-packages. This fork's fixes live in the afterswf forks of four of them
+packages. This fork's fixes live in the afterswf forks of five of them
 (see below).
 
 ## Fork state
 
 The fixes are on `main` of the [afterswf](https://github.com/afterswf) forks
 (future npm names `@afterswf/avm1`, `@afterswf/avm2`, `@afterswf/graphics`,
-`@afterswf/playerglobal`):
+`@afterswf/playerglobal`, `@afterswf/scene`):
 
 - **avm1** — FlashVars and the SWF URL's query string become `_level0`
   variables before any ActionScript runs (so `#initclip` code sees them);
@@ -56,15 +56,19 @@ The fixes are on `main` of the [afterswf](https://github.com/afterswf) forks
   LineElements path cannot form joints (per-segment quads).
 - **avm2** — Proxy trap dispatch falls back to public-mangled (`$Bg…`)
   subclass overrides; receiver preserved.
+- **scene** — `htmlText` entities decoded once, after parsing (`&amp;`,
+  `&lt;`, `&gt;`, `&quot;`, `&apos;`, `&#38;`, `&#x20AC;`), and a bare `&`
+  shown as itself. node-html-parser 1.4.9's `text` is the raw text, so
+  previously only `&gt;` was decoded and "A & B" showed as "A &amp; B".
 
 How they get into the bundle:
 
 - `package.json` keeps the **original dependency names** (`@awayfl/avm1`,
-  `@awayfl/avm2`, `@awayjs/graphics`, `@awayfl/playerglobal`) but points them
-  at sibling checkouts (`file:../avm2` etc.), so npm links them as aliases
-  (`npm ls` shows `@awayfl/avm2@npm:@afterswf/avm2 -> ./../avm2`). Keeping
-  the old names means this repo *and* every unforked package that imports
-  them (awayfl-player, swf-loader, scene, …) resolve to the one fork.
+  `@awayfl/avm2`, `@awayjs/graphics`, `@awayfl/playerglobal`, `@awayjs/scene`)
+  but points them at sibling checkouts (`file:../avm2` etc.), so npm links
+  them as aliases (`npm ls` shows `@awayfl/avm2@npm:@afterswf/avm2 -> ./../avm2`).
+  Keeping the old names means this repo *and* every unforked package that
+  imports them (awayfl-player, swf-loader, …) resolve to the one fork.
 - **When `@afterswf/*` is on npm:** change each spec to an npm alias, e.g.
   `"@awayfl/avm2": "npm:@afterswf/avm2@^0.2.241"` — nothing else changes.
 - rollup bundles `package.json#module` → `dist/index.js` → `dist/lib/**` of
@@ -92,7 +96,7 @@ How they get into the bundle:
 ## Building
 
 ```sh
-# once per checkout, in each of ../avm1, ../avm2, ../graphics, ../playerglobal
+# once per checkout, in each of ../avm1, ../avm2, ../graphics, ../playerglobal, ../scene
 npx yarn@1 install --frozen-lockfile
 
 npm install          # links the checkouts and builds their dist/ (prepare → tsc:build)
@@ -118,13 +122,13 @@ Gotchas:
 
 Edit the forked packages in their own checkouts, not in `node_modules`:
 
-1. Edit `lib/**/*.ts` in `../avm1`, `../avm2`, `../graphics` or `../playerglobal`
+1. Edit `lib/**/*.ts` in `../avm1`, `../avm2`, `../graphics`, `../playerglobal` or `../scene`
    (commit there, on a branch merged into its `main`)
 2. `npm run tsc:build` in that checkout (or `npm run watch` while iterating;
    `tsc:build` ignores the type errors described below, so JS still emits)
 3. Rebuild the runtime here and test
 
-Packages that aren't forked yet (swf-loader, scene, …) need forking
+Packages that aren't forked yet (swf-loader, core, renderer, …) need forking
 into afterswf first, then adding as another `file:` alias plus a checkout.
 
 Caveat: graphics and playerglobal report dozens of type errors against the
@@ -171,10 +175,11 @@ current packages here.
 ## Testing against the reference app
 
 The Music Machine (AS3/Flex-era, Proxy-based AMF service layer → Zend_Amf on
-PHP 8.5) lives at `/Users/neil/Desktop/4`; `awayfl/` there is a **symlink to
-this repo's `dist/`**. Serve with `php -S localhost:8080` from that dir
-(needs the local MySQL docker container running). A pre-fork hand-patched
-bundle is kept at `awayfl.patched/` as fallback.
+PHP 8.5) lives at `/Users/neil/Projects/imp1154-esp-music-machine-v2/www/4`
+and embeds via `swfObject.embedSWF`. Its `awayfl/` is a **symlink to this
+repo's `dist/`** (tracked in that repo). Serve with
+`php -S 127.0.0.1:8080` from that dir (needs the local `mysql` docker
+container running).
 
 Headless smoke test (Playwright; `npm i playwright` somewhere convenient).
 The app runs inside a **srcdoc iframe**; init-script globals reach it:
