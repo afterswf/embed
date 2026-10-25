@@ -1,5 +1,5 @@
 {
-  "name": "@awayfl/awayfl-embed",
+  "name": "@afterswf/embed",
   "version": "0.1.4",
   "description": "Embedded AwayFL Player for static publishing",
   "main": "index.js",
