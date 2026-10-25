@@ -8,8 +8,7 @@
     "static": "copyfiles -u 1 './static/**/*' ./dist/assets/",
     "prebuild": "npm run clean && npm run static",
     "build": "rollup -c --bundleConfigAsCjs",
-    "version": " npm run build",
-    "postversion": "git commit -a -m Build && git push origin --all && git push origin --tags"
+    "version": " npm run build"
   },
   "keywords": [
     "Flash",
@@ -23,7 +22,7 @@
     "registry": "https://npm.pkg.github.com/"
   },
   "dependencies": {
-    "@awayfl/avm1": "^0.2.167",
+    "@awayfl/avm1": "file:../avm1",
     "@awayfl/avm2": "file:../avm2",
     "@awayfl/awayfl-player": "^0.2.40",
     "@awayfl/playerglobal": "file:../playerglobal",
@@ -53,7 +52,7 @@
     "typescript": "5.3.3"
   },
   "lastUsedTags": {
-    "@awayfl/avm1": "v0.1.4",
+    "@awayfl/avm1": "v0.2.181",
     "@awayfl/avm2": "v0.2.241",
     "@awayfl/awayfl-player": "v0.1.4",
     "@awayfl/playerglobal": "v0.2.460",

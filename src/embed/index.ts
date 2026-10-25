@@ -1,104 +1,44 @@
-//@ts-ignore
-import template from "./embed.html";
-import {AwayPlayerComponent, IBindingConfig} from './AwayPlayerComponent';
-
-const NOT_IMPLEMENTED = (name) =>
-    console.warn("AwayFL loader does not support " + name);
-
-const scriptSrc = (<HTMLScriptElement>document.currentScript).src;
+import { observeFlashMarkup, upgradeAll } from './flashMarkup';
+import { addDomLoadEvent, swfobject, SWFObject } from './swfobject';
 
 const global = <any>window;
 
-let AWAY_EMBED_CFG: IBindingConfig;
+/**
+ * Defines a global that keeps AwayFL's value if a page's own swfobject.js assigns
+ * over it later, so embed.js works whether it's included before or after it
+ */
+function defineGlobal(name: string, value: any) {
+    const existing = Object.getOwnPropertyDescriptor(window, name);
 
-if (global.swfObject || global.SWFObject || global.swfobject) {
-    console.warn("Replace `swfObject` with AwayFl loader!");
+    if (existing && !existing.configurable) {
+        global[name] = value;
+        return;
+    }
+
+    Object.defineProperty(window, name, {
+        configurable: true,
+        enumerable: true,
+        get: () => value,
+        set: (other) => {
+            if (other !== value) {
+                console.info(`[AwayFL] Ignoring the page's ${name}, as AwayFL provides it`);
+            }
+        },
+    });
 }
 
-function createRuntimeFrame(
-    swfUrl: string, 
-    target: HTMLElement, 
-    width: string, 
-    height: string) {
-
-    if (!global.AWAY_EMBED_CFG) {
-        console.info('AwayFL configuration not found. To set custom options, define a `AWAY_EMBED_CFG` object as explained in the Readme');
-        global.AWAY_EMBED_CFG = {};
-    }
-    AWAY_EMBED_CFG = global.AWAY_EMBED_CFG;
-
-    const player = new AwayPlayerComponent();
-    player.src = swfUrl;
-    player.width = width;
-    player.height = height;
-
-    let baseUrl = AWAY_EMBED_CFG.runtimeBaseUrl;
-    if (baseUrl) {
-        player.runtimeBaseUrl = baseUrl;
-    }
-
-    const id = target.id;
-    const name = target.className;
-    const parent = target.parentElement;
-
-    target.id = null;
-    target.className = '';
-
-    player.id = id;
-    player.className = name;
-
-    parent.replaceChild(player, target);
-    
-    return player;
+if (global.swfobject || global.swfObject || global.SWFObject) {
+    console.info('[AwayFL] Replacing the page\'s SWFObject');
 }
 
-function embedSWF (
-    swfUrl: string,
-    targetId: HTMLElement | string,
-    widthStr: string,
-    heightStr: string,
-    _version?: string,
-    _xiSwfUrlStr?: string,
-    _flashvarsObj?: any,
-    _parObj?: any, 
-    _attObj?: any, 
-    callbackFn?: (arg:any) => void
-) {
-    
-    const ref = typeof targetId == 'string' ? document.getElementById(targetId) : targetId;
-    const frame = createRuntimeFrame(swfUrl, ref, widthStr, heightStr);
+defineGlobal('swfobject', swfobject);
+defineGlobal('swfObject', swfobject);
+defineGlobal('SWFObject', SWFObject);
 
-    frame.onload = () => {
-        callbackFn && callbackFn({
-            success: true,
-            ref: frame,
-            id: ref.id,
-        });
+// upgrade <object>/<embed> markup, including on pages that don't use SWFObject
+addDomLoadEvent(() => {
+    if ((global.AWAY_EMBED_CFG || {}).autoUpgrade !== false) {
+        upgradeAll();
+        observeFlashMarkup();
     }
-};
-
-document.addEventListener('load', () => {
-    
 });
-
-const swfObject = {
-    registerObject: () => NOT_IMPLEMENTED("registerObject"),
-    getObjectById: () => NOT_IMPLEMENTED("getObjectById"),
-    switchOffAutoHideShow: () => NOT_IMPLEMENTED("switchOffAutoHideShow"),
-    enableUriEncoding: () => NOT_IMPLEMENTED("enableUriEncoding"),
-    getFlashPlayerVersion: () => NOT_IMPLEMENTED("getFlashPlayerVersion"),
-    createSWF: () => NOT_IMPLEMENTED("createSWF"),
-    showExpressInstall: () => NOT_IMPLEMENTED("showExpressInstall"),
-    createCSS: () => NOT_IMPLEMENTED("createCSS"),
-    getQueryParamValue: () => NOT_IMPLEMENTED("getQueryParamValue"),
-
-    get ua(){
-        return NOT_IMPLEMENTED('ua');
-    },
-    embedSWF    
-};
-
-global.swfObject = swfObject;
-global.SWFObject = swfObject;
-global.swfobject = swfObject;
-

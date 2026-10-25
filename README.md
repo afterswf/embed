@@ -4,16 +4,17 @@ AwayFL helps you save your Flash games and keep them running after 2020!
 
 > **Fork notes:** this fork adds Flash Remoting (AMF-over-HTTP) support and several
 > runtime fixes, which live in the [afterswf](https://github.com/afterswf) forks of
-> [`avm2`](https://github.com/afterswf/avm2), [`graphics`](https://github.com/afterswf/graphics)
-> and [`playerglobal`](https://github.com/afterswf/playerglobal). Until those are published
-> to npm as `@afterswf/*`, `package.json` aliases `@awayfl/avm2`, `@awayjs/graphics` and
-> `@awayfl/playerglobal` to local checkouts in sibling folders (`../avm2` etc.), so this
-> repo and every `@awayfl/*`/`@awayjs/*` package it bundles use the forks. Install each
-> checkout's dependencies first; `npm install` here then builds their `dist/` via their
-> `prepare` scripts:
+> [`avm1`](https://github.com/afterswf/avm1), [`avm2`](https://github.com/afterswf/avm2),
+> [`graphics`](https://github.com/afterswf/graphics) and
+> [`playerglobal`](https://github.com/afterswf/playerglobal). Until those are published
+> to npm as `@afterswf/*`, `package.json` aliases `@awayfl/avm1`, `@awayfl/avm2`,
+> `@awayjs/graphics` and `@awayfl/playerglobal` to local checkouts in sibling folders
+> (`../avm1` etc.), so this repo and every `@awayfl/*`/`@awayjs/*` package it bundles use
+> the forks. Install each checkout's dependencies first; `npm install` here then builds
+> their `dist/` via their `prepare` scripts:
 >
 > ```sh
-> # in each of ../avm2, ../graphics, ../playerglobal
+> # in each of ../avm1, ../avm2, ../graphics, ../playerglobal
 > npx yarn@1 install --frozen-lockfile
 > ```
 >
@@ -60,11 +61,21 @@ __How to use__
 
 There are 3 main ways to use AwayFL on your site:
 
-1. [Overriding the `swfObject` API](./example/index.html)
-    * Load the AwayFL player by adding a script tag to your HTML file. For example:
+1. [As a drop-in replacement for SWFObject](./example/index.html)
+    * Load the AwayFL player instead of, or as well as, `swfobject.js` (either order works). For example:
         `<script src="../dist/embed.js"></script>`
-    * Load your SWF file using the [swfObject API](https://web.archive.org/web/20140704095451if_/http://code.google.com/p/swfobject/wiki/documentation#STEP_3:_Embed_your_SWF_with). For example:
-        `swfObject.embedSWF('Embedded.swf', 'container', '550', '400');`
+    * Existing [SWFObject](https://web.archive.org/web/20140704095451if_/http://code.google.com/p/swfobject/wiki/documentation#STEP_3:_Embed_your_SWF_with) code then embeds AwayFL players instead of Flash. For example:
+        `swfobject.embedSWF('Embedded.swf', 'container', '550', '400', '9.0.0', null, {name: 'value'});`
+      * SWFObject 2.x, as `swfobject` and `swfObject`: `embedSWF`, `registerObject` (static publishing), `createSWF`, `removeSWF`, `getObjectById`, `getFlashPlayerVersion` (reports 32.0.0), `hasFlashPlayerVersion`, `addDomLoadEvent`, `addLoadEvent`, `getQueryParamValue`, `createCSS`, `switchOffAutoHideShow`, `enableUriEncoding` and `ua`. As with SWFObject, callbacks run once the player element has been created, with `success: false` if it couldn't be; errors loading the SWF are reported by the element's `error` event.
+      * SWFObject 1.5: `new SWFObject(swf, id, width, height, version, bgcolor)`, with `addParam`, `addVariable` and `write(elementId)`.
+    * Hard-coded Flash `<object>` and `<embed>` markup is replaced with players too, including markup added to the page later. To turn this off, set `AWAY_EMBED_CFG.autoUpgrade = false`.
+    * Flash parameters (`<param>`s, SWFObject's `params`, or `<embed>` attributes):
+      * `flashvars` become `loaderInfo.parameters` in AS3 and `_root` variables in AS1/2, as do any query string parameters in the SWF's URL
+      * `bgcolor` overrides the SWF's background colour, and `scale` and `salign` set the stage's scale mode and alignment
+      * others, such as `wmode`, `allowScriptAccess` and `quality`, are accepted and ignored
+    * Attributes such as `id`, `class` (or SWFObject's `styleclass`), `name` and `style` are copied onto the `<awayfl-player>` element.
+    * `ExternalInterface` (AS2 and AS3) connects to the page as it did with the Flash plugin: `ExternalInterface.call()` runs in the page, and functions added with `ExternalInterface.addCallback()` become methods of the player element, e.g. `swfobject.getObjectById('game').myCallback()`.
+    * Whether a SWF needs AVM1 (AS1/2) or AVM2 (AS3) is detected automatically.
     * Optional: Configure AwayFL using the `AWAY_EMBED_CFG` variable.
         This allows you to customize AwayFL's behavior. For a list of available options, see the [IBindingConfig interface](./src/embed/AwayPlayerComponent.ts).
 

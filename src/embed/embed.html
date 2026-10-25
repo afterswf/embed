@@ -55,6 +55,10 @@
 		window.addEventListener("load", () => {
 
 			const config = JSON.parse(__GAME_CONFIG__);
+			const fail = (error) => {
+				console.error('[AwayFL]', error);
+				window.dispatchEvent(new CustomEvent('awayfl-player-error', {detail: error}));
+			};
 
 			AWAYFL.LegacyLoader.init(config);
 			AWAYFL.LegacyLoader.runGame((fill) => {
@@ -67,8 +71,9 @@
 					.then((_, hide) => {
 						window.dispatchEvent(new CustomEvent('awayfl-player-load'));
 						hide && hide() || window.swfParseComplete && window.swfParseComplete();;
-					});				
-			})
+					})
+					.catch(fail);
+			}).catch(fail);
 		});
 	</script>
 </body>

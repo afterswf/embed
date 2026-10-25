@@ -30,15 +30,29 @@ export interface IBindingConfig {
     version?: string;
     runtimeBaseUrl: string;
     src: string;
-    avm1?: boolean;
     width: string | number;
     height: string | number;
     onLoad?: string;
     onProgress?: string;
     onError?: string;
+    /**
+     * @description Flash `scale`: showAll (default), noScale, exactFit or noBorder
+     */
     scaleMode?: string;
+    /**
+     * @description Flash `salign`: T, B, L, R, TL, TR, BL or BR
+     */
+    stageAlign?: string;
     autoplay?: boolean;
     backgroundColor?: string;
+    /**
+     * @description Flash `bgcolor`: overrides the SWF's background colour, e.g. #ffffff
+     */
+    bgcolor?: string;
+    /**
+     * @description Flash `flashvars`: a query string (a=1&b=2) or an object
+     */
+    flashvars?: string | {[name: string]: any};
     splash?: string | boolean,
     progress?: boolean | {
 		back: string;
@@ -46,7 +60,7 @@ export interface IBindingConfig {
 		line: string;
 		direction?: 'lr' | 'tb'
 	},
-    
+
     /**
      * @description A decimal value between 0 and 1. Limits stage scale to improve performance.
      * For example, 0.5 limits the player to half resolution.
@@ -78,6 +92,58 @@ export interface IBindingConfig {
 
 type TBindingScheme = {[key in keyof IBindingConfig]: {required?: boolean, default?: any}};
 
+/**
+ * Flash <object>/<embed> parameter and attribute names that map onto config keys.
+ * Others, such as wmode, allowScriptAccess, quality and menu, have no equivalent
+ * and are ignored.
+ */
+const FLASH_PARAMS: {[name: string]: keyof IBindingConfig} = {
+    movie: 'src',
+    data: 'src',
+    flashvars: 'flashvars',
+    bgcolor: 'bgcolor',
+    scale: 'scaleMode',
+    salign: 'stageAlign',
+};
+
+const SCALE_MODES = {
+    showall: 'showAll',
+    all: 'showAll',
+    noborder: 'noBorder',
+    exactfit: 'exactFit',
+    noscale: 'noScale',
+};
+
+export function parseFlashVars(value: string | {[name: string]: any}): {[name: string]: string} {
+    const result = {};
+
+    if (typeof value === 'string') {
+        new URLSearchParams(value).forEach((v, k) => {
+            result[k] = v;
+        });
+    } else if (value) {
+        for (const key in value) {
+            result[key] = String(value[key]);
+        }
+    }
+
+    return result;
+}
+
+function parseColor(value: string): number {
+    const match = /^#?([0-9a-f]{6})$/i.exec(value || '');
+    return match ? parseInt(match[1], 16) : null;
+}
+
+function normalizeAlign(value: string): string {
+    const v = value.toUpperCase();
+    return (v.indexOf('T') > -1 ? 'T' : v.indexOf('B') > -1 ? 'B' : '')
+        + (v.indexOf('L') > -1 ? 'L' : v.indexOf('R') > -1 ? 'R' : '');
+}
+
+function cssSize(value: string | number): string {
+    return /^\d+(\.\d+)?$/.test('' + value) ? value + 'px' : '' + value;
+}
 
 export class AwayPlayerComponent extends HTMLElement {
     static get observedAttributes() {
@@ -92,17 +158,19 @@ export class AwayPlayerComponent extends HTMLElement {
         version: {required: false, default: 'latest'},
         runtimeBaseUrl: {required: false, default: scriptBaseUrl},
         src: {required: true},
-        avm1: {required: false, default: false},
         width: {required: false, default: 550},
         height: {required: false, default: 400},
         onLoad: {required: false},
         onProgress: {required: false},
         onError: {required: false},
-        scaleMode: {required: false, default: 'all'},
+        scaleMode: {required: false, default: 'showAll'},
+        stageAlign: {required: false},
         autoplay: {required: false, default: true},
         hideBeforeLoad: {required: false, default: false},
         maxStageScale: {required: false, default: undefined},
         backgroundColor: {required: false, default: 'black'},
+        bgcolor: {required: false},
+        flashvars: {required: false},
         splash: {required: false, default: defaultSplashUrl},
         progress: {required: false, default: defaultProgress},
 
@@ -117,6 +185,7 @@ export class AwayPlayerComponent extends HTMLElement {
     _gameFrame: HTMLIFrameElement;
     _player: IAwayPlayer;
     _root: ShadowRoot;
+    _style: HTMLStyleElement;
 
     get player() {
         return this._player;
@@ -127,7 +196,7 @@ export class AwayPlayerComponent extends HTMLElement {
     }
     set config(cfg) {
         this._runConfig = cfg;
-    } 
+    }
 
     get src() {
         return this._runConfig.src || this.getAttribute('src');
@@ -218,6 +287,9 @@ export class AwayPlayerComponent extends HTMLElement {
         }, {once: true});
 
         //@ts-ignore
+        fd.addEventListener('awayfl-player-error', ({detail}) => this.onError(detail), {once: true});
+
+        //@ts-ignore
         fd.addEventListener('awayfl-player-progress', ({detail}) => {
             const f = this._runConfig.onProgress && self[this._runConfig.onProgress];
 
@@ -225,16 +297,16 @@ export class AwayPlayerComponent extends HTMLElement {
                 f(detail);
             }
 
-            
+
             this.dispatchEvent(new CustomEvent('progress', {detail}));
         });
-        
+
     }
 
     _buildTemplate(frame: HTMLIFrameElement): string {
         const t: string = template;
         const urls = this._getRuntimeUrl();
-     
+
         const gameConfig = {
             width: frame.clientWidth,
             height: frame.clientHeight,
@@ -251,30 +323,30 @@ export class AwayPlayerComponent extends HTMLElement {
             //debug: true,
             baseUrl: urls.baseUrl,
             maxStageScale: +this._runConfig.maxStageScale,
+            flashvars: parseFlashVars(this._runConfig.flashvars),
+            stageScaleMode: this._runConfig.scaleMode,
+            stageAlign: this._runConfig.stageAlign,
+            stageColor: parseColor(this._runConfig.bgcolor),
             runtimeFlags: {
                 defaultSmoothBitmap: !!this._runConfig.smoothBitmaps,
                 enableBlends: !!this._runConfig.enableBlends,
                 enableFilters: !!this._runConfig.enableFilters,
             }
         }
-    
+
         return t
             .replace(/__LOADER_URL__/, urls.loader)
-            .replace(/__GAME_CONFIG__/, JSON.stringify(JSON.stringify(gameConfig))); 
+            .replace(/__GAME_CONFIG__/, JSON.stringify(JSON.stringify(gameConfig)));
     }
 
     _constructPlayer() {
         const root = this._root;
         const frame = document.createElement('iframe');
 
-        frame.style.border = 'none';
         frame.style.display = this._runConfig.hideBeforeLoad ? 'none' : ''
 
-        frame.width = '' + this._runConfig.width;
-        frame.height = '' + this._runConfig.height;
-
         this._gameFrame = frame;
-        
+
         root.appendChild(frame);
 
         frame.addEventListener('load', this._attachRuntimeEvents.bind(this), {
@@ -285,30 +357,45 @@ export class AwayPlayerComponent extends HTMLElement {
         frame.srcdoc = this._buildTemplate(frame);
     }
 
+    /**
+     * Config key for a param or attribute name, matched case-insensitively as
+     * HTML lowercases attribute names and Flash param names ignore case
+     */
+    _configKey(name: string): keyof IBindingConfig {
+        const lower = name.toLowerCase();
+
+        if (lower in FLASH_PARAMS) {
+            return FLASH_PARAMS[lower];
+        }
+
+        return <keyof IBindingConfig>Object.keys(AwayPlayerComponent.BINDING_CONFIG)
+            .find((key) => key.toLowerCase() === lower);
+    }
+
     _mapAttrs() {
         const params: NodeListOf<HTMLParamElement> = this.querySelectorAll('param');
-        const attrs = this.getAttributeNames();
-
-        const scheme = AwayPlayerComponent.BINDING_CONFIG;
+        const config = <any>this._runConfig;
 
         params.forEach(node => {
-            if (node.name in scheme) {
-                this._runConfig[node.name] = node.value;
+            const key = this._configKey(node.name);
+            if (key) {
+                config[key] = node.value;
             }
         });
 
-        attrs.forEach(name => {
-            if (name in scheme) {
-                this._runConfig[name] = this.getAttribute(name);
+        this.getAttributeNames().forEach(name => {
+            const key = this._configKey(name);
+            if (key) {
+                config[key] = this.getAttribute(name);
             }
         });
     }
 
     _loadGlobalConfig() {
         const global = <any>window;
-        const globalCfg = global.AWAY_EMBED_CFG;
+        const globalCfg = global.AWAY_EMBED_CFG || {};
         const scheme = AwayPlayerComponent.BINDING_CONFIG;
-        
+
         for(const [key, value] of Object.entries(globalCfg)) {
             if (key in scheme) {
                 this._runConfig[key] = value;
@@ -329,25 +416,52 @@ export class AwayPlayerComponent extends HTMLElement {
         }
     }
 
+    _normalizeConfig() {
+        const config = this._runConfig;
+
+        config.scaleMode = SCALE_MODES[('' + config.scaleMode).toLowerCase()] || config.scaleMode;
+
+        if (config.stageAlign) {
+            config.stageAlign = normalizeAlign(config.stageAlign) || undefined;
+        }
+
+        if (config.bgcolor) {
+            config.backgroundColor = parseColor(config.bgcolor) === null
+                ? config.bgcolor
+                : '#' + config.bgcolor.replace('#', '');
+        }
+    }
+
+    _updateStyle() {
+        this._style.textContent = `
+            :host {
+                display: inline-block;
+                contain: content;
+                width: ${cssSize(this._runConfig.width)};
+                height: ${cssSize(this._runConfig.height)};
+            }
+            iframe {
+                display: block;
+                width: 100%;
+                height: 100%;
+                border: none;
+            }
+            `;
+    }
+
     connectedCallback() {
         setTimeout(() => {
             this._loaderHolder = this.querySelector('div.awayfl__loader');
             this._loadGlobalConfig();
             this._mapAttrs();
             this._setDefaults();
+            this._normalizeConfig();
+
+            this._style = document.createElement('style');
+            this._updateStyle();
+            this._root.appendChild(this._style);
+
             this._constructPlayer();
-
-            const style = document.createElement('style');
-            style.textContent = `
-            :host {
-                display: block;
-                contain: content;
-                width: ${this._runConfig.width};
-                height: ${this._runConfig.height};
-            }
-            `;
-
-            this._root.appendChild(style); 
         });
     }
 
@@ -369,8 +483,9 @@ export class AwayPlayerComponent extends HTMLElement {
             return;
         }
 
-        if (name === 'width' || name === 'height') {
-            this._root.styleSheets[0].insertRule(`:host { ${name}: ${newValue};}`);
+        if ((name === 'width' || name === 'height') && this._style) {
+            this._runConfig[name] = newValue;
+            this._updateStyle();
         }
     }
 }

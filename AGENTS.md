@@ -9,24 +9,43 @@ player; most of the non-obvious facts below were learned the hard way.
 Bundler/wrapper around the `@awayfl/*` + `@awayjs/*` **npm packages**. It owns
 almost no runtime code itself:
 
-- `src/embed/` → `dist/embed.js` — `<awayfl-player>` custom element + swfobject shim
+- `src/embed/` → `dist/embed.js` — runs in the host page:
+  - `AwayPlayerComponent.ts` — `<awayfl-player>` custom element; maps Flash
+    params/attributes (`flashvars`, `bgcolor`, `scale`, `salign`, `movie`…)
+    onto its config and renders the player in a same-origin `srcdoc` iframe
+  - `swfobject.ts` — SWFObject 2.x API (`swfobject`/`swfObject`) and 1.5's
+    `SWFObject` constructor
+  - `flashMarkup.ts` — replaces `<object>`/`<embed>` Flash markup with players
+    (static publishing, and a MutationObserver for later markup)
 - `src/loader/` → `dist/loader.js` — SWF fetch/decompress + progress UI
 - `src/runtime.ts` → `dist/runtime.js` (~2.5 MB) — the actual player: rolls up
-  `@awayfl/avm2`, `@awayfl/playerglobal`, `@awayfl/swf-loader`, `@awayjs/*`
+  `@awayfl/avm1`, `@awayfl/avm2`, `@awayfl/playerglobal`, `@awayfl/swf-loader`,
+  `@awayjs/*`; also applies `bgcolor`. Flashvars travel in the game config
+  (`flashvars`) to avm1's `AVM1Handler` (`_level0` variables) and
+  playerglobal's `LoaderInfo.parameters`
+- `src/externalInterface.ts` — points swf-loader's `ExternalInterfaceService`
+  at the host page, so `ExternalInterface` reaches it synchronously
 - `static/` → `dist/assets/` (playerglobal builtins ABCs, fonts.swf, splash)
 
 Runtime bugs are almost never in this repo — they're in the dependency
-packages. This fork's fixes live in the afterswf forks of three of them
+packages. This fork's fixes live in the afterswf forks of four of them
 (see below).
 
 ## Fork state
 
 The fixes are on `main` of the [afterswf](https://github.com/afterswf) forks
-(future npm names `@afterswf/avm2`, `@afterswf/graphics`,
+(future npm names `@afterswf/avm1`, `@afterswf/avm2`, `@afterswf/graphics`,
 `@afterswf/playerglobal`):
 
-- **playerglobal** — Flash Remoting (AMF-over-HTTP) in
-  `NetConnection`/`Responder`; `MouseCursorData` linked; aggregated
+- **avm1** — FlashVars and the SWF URL's query string become `_level0`
+  variables before any ActionScript runs (so `#initclip` code sees them);
+  AS2 `ExternalInterface` goes through swf-loader's `ExternalInterfaceService`
+  like AS3's, converting values both ways.
+- **playerglobal** — `LoaderInfo.parameters` (URL query string + config
+  `flashvars`); `ExternalInterface` callbacks return JS values, not JS
+  source strings, and strings are escaped safely for `call()`; Flash
+  Remoting (AMF-over-HTTP) in `NetConnection`/`Responder`; `MouseCursorData`
+  linked; aggregated
   `EventDispatcher` reports `_t` as `currentTarget` (GreenSock fix);
   `removeChild` warns instead of throwing #2025 (ticker-killer fix);
   `Graphics.lineStyle` clamps alpha to [0,1] like Flash (AS2-era content
@@ -40,12 +59,12 @@ The fixes are on `main` of the [afterswf](https://github.com/afterswf) forks
 
 How they get into the bundle:
 
-- `package.json` keeps the **original dependency names** (`@awayfl/avm2`,
-  `@awayjs/graphics`, `@awayfl/playerglobal`) but points them at sibling
-  checkouts (`file:../avm2` etc.), so npm links them as aliases
+- `package.json` keeps the **original dependency names** (`@awayfl/avm1`,
+  `@awayfl/avm2`, `@awayjs/graphics`, `@awayfl/playerglobal`) but points them
+  at sibling checkouts (`file:../avm2` etc.), so npm links them as aliases
   (`npm ls` shows `@awayfl/avm2@npm:@afterswf/avm2 -> ./../avm2`). Keeping
   the old names means this repo *and* every unforked package that imports
-  them (avm1, awayfl-player, swf-loader, scene, …) resolve to the one fork.
+  them (awayfl-player, swf-loader, scene, …) resolve to the one fork.
 - **When `@afterswf/*` is on npm:** change each spec to an npm alias, e.g.
   `"@awayfl/avm2": "npm:@afterswf/avm2@^0.2.241"` — nothing else changes.
 - rollup bundles `package.json#module` → `dist/index.js` → `dist/lib/**` of
@@ -73,7 +92,7 @@ How they get into the bundle:
 ## Building
 
 ```sh
-# once per checkout, in each of ../avm2, ../graphics, ../playerglobal
+# once per checkout, in each of ../avm1, ../avm2, ../graphics, ../playerglobal
 npx yarn@1 install --frozen-lockfile
 
 npm install          # links the checkouts and builds their dist/ (prepare → tsc:build)
@@ -99,13 +118,13 @@ Gotchas:
 
 Edit the forked packages in their own checkouts, not in `node_modules`:
 
-1. Edit `lib/**/*.ts` in `../avm2`, `../graphics` or `../playerglobal`
+1. Edit `lib/**/*.ts` in `../avm1`, `../avm2`, `../graphics` or `../playerglobal`
    (commit there, on a branch merged into its `main`)
 2. `npm run tsc:build` in that checkout (or `npm run watch` while iterating;
    `tsc:build` ignores the type errors described below, so JS still emits)
 3. Rebuild the runtime here and test
 
-Packages that aren't forked yet (avm1, swf-loader, scene, …) need forking
+Packages that aren't forked yet (swf-loader, scene, …) need forking
 into afterswf first, then adding as another `file:` alias plus a checkout.
 
 Caveat: graphics and playerglobal report dozens of type errors against the

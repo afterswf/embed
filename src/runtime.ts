@@ -1,4 +1,4 @@
-const s = [ 
+const s = [
     "border: solid 4px #fb5900",
     "border-radius: 8px",
     "color: white",
@@ -13,9 +13,10 @@ console.log("%cAWAYFL: __VERSION__\nBUILD: __DATE__", s);
 import { AVM1Handler } from "@awayfl/avm1";
 import { AVM2Handler } from "@awayfl/avm2";
 import { LoaderInfo, PlayerGlobal } from "@awayfl/playerglobal";
-import { AVMStage } from "@awayfl/swf-loader";
+import { AVMEvent, AVMStage } from "@awayfl/swf-loader";
 import { Settings as GraphicsSettings } from '@awayjs/graphics';
 import { Settings as SceneSettings } from "@awayjs/scene";
+import { bridgeExternalInterface } from "./externalInterface";
 
 //@ts-ignore;
 export const VERSION = "__VERSION__";
@@ -27,7 +28,7 @@ export class Player extends AVMStage {
             x:'0%', y: '0%', w: '100%', h: '100%',
             stageScaleMode: 'showAll', runtimeFlags : {}
         }, conf || {}));
-        
+
         const runtime = this._gameConfig.runtimeFlags;
 
         GraphicsSettings.SMOOTH_BITMAP_FILL_DEFAULT = runtime.defaultSmoothBitmap;
@@ -39,16 +40,24 @@ export class Player extends AVMStage {
         }
 
         this._gameConfig.files.push(
-            { 
-                path:  `${(conf?.baseUrl ? conf?.baseUrl + "/" : "")}assets/fonts.swf`, 
-                resourceType: <any>"FONTS" 
-            },                
+            {
+                path:  `${(conf?.baseUrl ? conf?.baseUrl + "/" : "")}assets/fonts.swf`,
+                resourceType: <any>"FONTS"
+            },
         );
 
         if (conf?.baseUrl) {
             // builtins located in assets
             PlayerGlobal.builtinsBaseUrl = conf.baseUrl + '/assets/builtins';
         }
+
+        const stageColor = this._gameConfig.stageColor;
+        if (typeof stageColor === 'number') {
+            // Flash's bgcolor param overrides the SWF's own background colour
+            this.addEventListener(AVMEvent.AVM_COMPLETE, () => this.color = stageColor);
+        }
+
+        bridgeExternalInterface();
 
         this.registerAVMStageHandler( new AVM1Handler());
         this.registerAVMStageHandler( new AVM2Handler(new PlayerGlobal()));
@@ -78,7 +87,7 @@ export class Player extends AVMStage {
 
         return new Promise((res)=>{
             this.addEventListener('loaderComplete', () => res());
-            this.loadNextResource();	
+            this.loadNextResource();
         });
     }
 

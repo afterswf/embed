@@ -10,6 +10,9 @@ export function Fetcher(url = '', progress = f => f) {
 
 	return fetch(url)
 		.then((request) => {
+			if (!request.ok) {
+				throw new Error(`Failed to load ${url}: ${request.status} ${request.statusText}`);
+			}
 			total = +request.headers.get('Content-Length');
 			reader = request.body.getReader();
 			return reader.read();
@@ -117,6 +120,10 @@ export function loadBinary(file: IFile, progressEvent: tProgress = f => f): Prom
 	return new Promise((res, rej) => {
 		req.addEventListener("error", rej);
 		req.addEventListener("load", () => {
+			if (req.status >= 400) {
+				rej(new Error(`Failed to load ${file.path}: ${req.status} ${req.statusText}`));
+				return;
+			}
 			progressEvent(1);
 
 			if (isScript) {
