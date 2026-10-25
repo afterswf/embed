@@ -1,61 +1,61 @@
-AwayFL Embedded Player
-==================
-AwayFL helps you save your Flash games and keep them running after 2020!
+AfterSWF
+========
 
-> **Fork notes:** this fork adds Flash Remoting (AMF-over-HTTP) support and several
-> runtime fixes, which live in the [afterswf](https://github.com/afterswf) forks of
-> [`avm1`](https://github.com/afterswf/avm1), [`avm2`](https://github.com/afterswf/avm2),
-> [`graphics`](https://github.com/afterswf/graphics),
-> [`playerglobal`](https://github.com/afterswf/playerglobal),
-> [`renderer`](https://github.com/afterswf/renderer) and
-> [`scene`](https://github.com/afterswf/scene). Until those are published
-> to npm as `@afterswf/*`, `package.json` aliases `@awayfl/avm1`, `@awayfl/avm2`,
-> `@awayjs/graphics`, `@awayfl/playerglobal`, `@awayjs/renderer` and `@awayjs/scene` to
-> local checkouts in sibling folders (`../avm1` etc.), so this repo and every
-> `@awayfl/*`/`@awayjs/*` package it bundles use the forks. Install each checkout's
-> dependencies first; `npm install` here then builds their `dist/` via their `prepare`
-> scripts:
->
-> ```sh
-> # in each of ../avm1, ../avm2, ../graphics, ../playerglobal, ../renderer, ../scene
-> npx yarn@1 install --frozen-lockfile
-> ```
->
-> To build without sibling checkouts, point the aliases at GitHub instead
-> (`"@awayfl/avm2": "github:afterswf/avm2#main"` etc.) — npm clones, builds and packs them.
->
-> Fixes included:
->
-> * **`@awayfl/playerglobal`**
->   * `flash.net.NetConnection`: working `connect()`/`call()` for HTTP(S) AMF remoting
->     gateways (Zend_Amf, AMFPHP, …). Arguments and results are serialised with the AVM2
->     ByteArray AMF codec; only the remoting packet envelope is hand-written. Faults are
->     routed to `Responder.status` / `NetConnection.Call.Failed`. Debug logging via
->     `self.__AWAYFL_AMF_DEBUG = true`.
->   * `flash.net.Responder`: `invokeResult`/`invokeStatus` helpers.
->   * `flash.ui.MouseCursorData`: linked (fresh data-holder implementation) so content
->     using `Mouse.registerCursor` no longer dies with "Class native is not defined".
->   * `EventDispatcherBase`: `event.currentTarget` now reports the aggregation target
->     (`new EventDispatcher(target)`) during dispatch, matching Flash — GreenSock event
->     handlers rely on this.
->   * `DisplayObjectContainer.removeChild`: no longer throws #2025 when the internal
->     scene graph has already detached the child — the throw could erupt through a frame
->     callback and kill the ticker.
-> * **`@awayjs/graphics`**
->   * Thick strokes (>1.5px, non-hairline) are tessellated to triangles via the
->     existing (previously unused) `getTriangleElements`, so `lineStyle` joint
->     styles (miter/bevel/round) and caps actually apply. The GPU-expanded
->     LineElements path draws each segment as an independent quad and leaves a
->     notch at every corner of a polyline.
-> * **`@awayfl/avm2`**
->   * `Proxy` (flash.utils.Proxy): trap dispatch now finds subclass overrides whose
->     traits were mangled into the public namespace (`$Bg…`) instead of the flash_proxy
->     namespace — previously `flash_proxy override function callProperty` etc. were
->     unreachable and dynamic property access threw #2088–#2096.
->
-> Build toolchain: `rollup-plugin-typescript2` was replaced with the official
-> `@rollup/plugin-typescript` (rpt2 fails under current Node/rollup), and rollup /
-> typescript are pinned to known-good versions.
+AfterSWF is [Mesmotronic](https://mesmotronic.com)'s fork of [AwayFL](https://github.com/awayfl/awayfl-embed),
+the open-source Flash player for the browser. It adds the following functionality to enable it to render more advanced AS3 content and make it a
+better drop-in replacement for the original SWFObject.
+
+### A better drop-in replacement for SWFObject
+
+| Feature | What you get |
+|---|---|
+| SWFObject 2.x | `swfobject` (and `swfObject`) supports `embedSWF`, `registerObject`, `createSWF`, `removeSWF`, `getObjectById`, `hasFlashPlayerVersion`, `getFlashPlayerVersion` (which reports Flash Player 32), `addDomLoadEvent`, `addLoadEvent` and `getQueryParamValue`, with SWFObject's callback behaviour |
+| SWFObject 1.5 | `new SWFObject(swf, id, width, height, version, bgcolor)`, with `addParam`, `addVariable` and `write` |
+| Hard-coded embeds | Flash `<object>` and `<embed>` markup is replaced with players, including markup added after the page has loaded |
+| Flash parameters | `flashvars`, `bgcolor`, `scale` and `salign` work as in Flash; others, such as `wmode`, are accepted and ignored. Attributes such as `id`, `class` and `name` are kept |
+| ExternalInterface | `ExternalInterface.call()` in AS2 and AS3 runs in the page, and functions added with `addCallback()` become methods of the player element, with their return values |
+| Load errors | Errors loading a SWF fire the player element's `error` event |
+
+### More advanced AS3 content
+
+| Feature | What you get | Package |
+|---|---|---|
+| Flash Remoting | `NetConnection.connect()` and `call()` work with HTTP(S) AMF gateways such as Zend_Amf and AMFPHP. Set `self.__AWAYFL_AMF_DEBUG = true` to log the traffic | [playerglobal](https://github.com/afterswf/playerglobal) |
+| FlashVars | Available as `loaderInfo.parameters` in AS3 and as `_root` variables in AS1/2, along with any query string parameters in the SWF's URL | [playerglobal](https://github.com/afterswf/playerglobal), [avm1](https://github.com/afterswf/avm1) |
+| `flash.utils.Proxy` | Subclasses' `flash_proxy` overrides are found, so dynamic property access works instead of throwing errors #2088–#2096 | [avm2](https://github.com/afterswf/avm2) |
+| Lines | Miter, bevel and round joints and square and round caps render as in Flash, without notches at the corners, and `lineStyle` alpha is limited to 0–1 | [graphics](https://github.com/afterswf/graphics), [playerglobal](https://github.com/afterswf/playerglobal) |
+| Colour transforms | Colours are clamped as in Flash, so an alpha above 1 no longer distorts them | [renderer](https://github.com/afterswf/renderer) |
+| HTML text | Entities such as `&amp;`, `&lt;` and `&#163;` in `htmlText` display as in Flash | [scene](https://github.com/afterswf/scene) |
+| Event targets | Events from an aggregated `EventDispatcher` report the right `currentTarget`, which GreenSock relies on | [playerglobal](https://github.com/afterswf/playerglobal) |
+| Mouse cursors | `flash.ui.MouseCursorData` is available, so `Mouse.registerCursor` works | [playerglobal](https://github.com/afterswf/playerglobal) |
+| Removing children | `removeChild` no longer throws error #2025 for children that have already been detached internally, which could stop playback | [playerglobal](https://github.com/afterswf/playerglobal) |
+
+### Building
+
+The fixes live in the [afterswf](https://github.com/afterswf) forks of avm1, avm2, graphics, playerglobal,
+renderer and scene. Until they're published to npm as `@afterswf/*`, `package.json` points the original
+package names (`@awayfl/avm1`, `@awayjs/graphics` etc.) at local checkouts in sibling folders (`../avm1`
+etc.), so this repo and every package it bundles use the forks.
+
+Install each checkout's dependencies first; `npm install` here then builds their `dist/` folders through
+their `prepare` scripts:
+
+```sh
+# in each of ../avm1, ../avm2, ../graphics, ../playerglobal, ../renderer and ../scene
+npx yarn@1 install --frozen-lockfile
+```
+
+To build without the sibling checkouts, point the packages at GitHub instead
+(`"@awayfl/avm2": "github:afterswf/avm2#main"` etc.), and npm will clone, build and pack them.
+
+The build uses the official `@rollup/plugin-typescript` instead of `rollup-plugin-typescript2`, which fails
+with current versions of Node and rollup, and pins rollup and TypeScript to versions known to work.
+
+---
+
+# Original AwayFL README
+
+AwayFL helps you save your Flash games and keep them running after 2020!
 
 Check your game on:
 https://awayfl.org/swf-tester/
