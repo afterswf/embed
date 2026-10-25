@@ -150,6 +150,15 @@ bundle that `main` points at). All have `publishConfig.access: public`.
 Publish the forks in dependency order (renderer → graphics → scene → avm2 →
 avm1 → playerglobal), then embed.
 
+The forks keep upstream's import names, so their `peerDependencies` point
+those names at the other forks with npm aliases (e.g. `"@awayjs/scene":
+"npm:@afterswf/scene@^0.13.325"`); unforked packages' plain ranges for the
+same names are satisfied by them. Their `devDependencies` still name
+upstream, through lockfiles from ~2023: fine for building, as UMD bundles
+keep every `@awayjs`/`@awayfl` package external (playerglobal's didn't for
+scene, which broke its build), but switching them to the published forks
+would remove the version-skew type errors.
+
 ## Editing the dependency packages
 
 Edit the forked packages in their own checkouts, not in `node_modules`:
