@@ -33,26 +33,22 @@ better drop-in replacement for the original SWFObject.
 ### Using it as a module
 
 The embed script is also an ES module, which exports `swfobject` (and `swfObject`), `SWFObject`,
-`AwayPlayerComponent` and `configure()`. For example, using [esm.sh](https://esm.sh):
+`AwayPlayerComponent`, `configure()` and `VERSION`. For example, from [jsDelivr](https://www.jsdelivr.com):
 
 ```html
 <div id="game"></div>
 
 <script type="module">
-  import { swfobject, configure } from 'https://esm.sh/@afterswf/embed';
-
-  // the player loads its runtime and assets by URL, so point it at a CDN that serves the package's files as they are
-  configure({ runtimeBaseUrl: 'https://cdn.jsdelivr.net/npm/@afterswf/embed/dist/' });
+  import { swfobject } from 'https://cdn.jsdelivr.net/npm/@afterswf/embed/dist/embed.mjs';
 
   swfobject.embedSWF('game.swf', 'game', 550, 400, '9.0.0', null, { level: 1 });
 </script>
 ```
 
-Use the same version in both URLs, e.g. `@afterswf/embed@x.y.z`, so they don't drift apart.
+The player loads its runtime and assets from the same folder as the module. Pin a version in production,
+e.g. `@afterswf/embed@0.1.4`.
 
-If you import from jsDelivr instead (`https://cdn.jsdelivr.net/npm/@afterswf/embed/dist/embed.mjs`), you don't
-need to set `runtimeBaseUrl`, as the runtime is next to the module. With a bundler, install
-`@afterswf/embed` and either serve its `dist/` folder or point `runtimeBaseUrl` at it.
+With a bundler, install `@afterswf/embed` and either serve its `dist/` folder or point `runtimeBaseUrl` at it.
 
 Importing it also defines the global `swfobject`, so existing scripts on the page keep working, and
 `configure()` takes the same options as `AWAY_EMBED_CFG`.
