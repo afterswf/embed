@@ -28,14 +28,14 @@ almost no runtime code itself:
 - `static/` → `dist/assets/` (playerglobal builtins ABCs, fonts.swf, splash)
 
 Runtime bugs are almost never in this repo — they're in the dependency
-packages. This fork's fixes live in the afterswf forks of five of them
+packages. This fork's fixes live in the afterswf forks of six of them
 (see below).
 
 ## Fork state
 
 The fixes are on `main` of the [afterswf](https://github.com/afterswf) forks
 (future npm names `@afterswf/avm1`, `@afterswf/avm2`, `@afterswf/graphics`,
-`@afterswf/playerglobal`, `@afterswf/scene`):
+`@afterswf/playerglobal`, `@afterswf/renderer`, `@afterswf/scene`):
 
 - **avm1** — FlashVars and the SWF URL's query string become `_level0`
   variables before any ActionScript runs (so `#initclip` code sees them);
@@ -53,9 +53,9 @@ The fixes are on `main` of the [afterswf](https://github.com/afterswf) forks
   linked; aggregated
   `EventDispatcher` reports `_t` as `currentTarget` (GreenSock fix);
   `removeChild` warns instead of throwing #2025 (ticker-killer fix);
-  `Graphics.lineStyle` clamps alpha to [0,1] like Flash (AS2-era content
-  passes 0-100; unclamped alpha corrupts stroke colours — `beginFill`
-  already clamped, strokes didn't).
+  `Graphics.lineStyle` clamps alpha to [0,1] like Flash (`beginFill`
+  already clamped, strokes didn't; see renderer for why alphas above 1
+  matter).
 - **graphics** — thick strokes tessellated to triangles (orphaned
   `getTriangleElements`) so lineStyle joints/caps apply; the default
   LineElements path cannot form joints (per-segment quads).
@@ -65,12 +65,18 @@ The fixes are on `main` of the [afterswf](https://github.com/afterswf) forks
   `&lt;`, `&gt;`, `&quot;`, `&apos;`, `&#38;`, `&#x20AC;`), and a bare `&`
   shown as itself. node-html-parser 1.4.9's `text` is the raw text, so
   previously only `&gt;` was decoded and "A & B" showed as "A &amp; B".
+- **renderer** — `ShaderBase` clamps (`sat`) each channel after the colour
+  transform, as Flash does. Without it, premultiplying alpha multiplied RGB
+  by any alpha above 1: the Music Machine's deployed SWF (older than its
+  source) has `Line.draw(..., alpha:Number = 100)`, so its chart labels came
+  out cyan (`#00A0C6` × 100) and white (`#F0037F` × 100, invisible).
 
 How they get into the bundle:
 
 - `package.json` keeps the **original dependency names** (`@awayfl/avm1`,
-  `@awayfl/avm2`, `@awayjs/graphics`, `@awayfl/playerglobal`, `@awayjs/scene`)
-  but points them at sibling checkouts (`file:../avm2` etc.), so npm links
+  `@awayfl/avm2`, `@awayjs/graphics`, `@awayfl/playerglobal`,
+  `@awayjs/renderer`, `@awayjs/scene`) but points them at sibling checkouts
+  (`file:../avm2` etc.), so npm links
   them as aliases (`npm ls` shows `@awayfl/avm2@npm:@afterswf/avm2 -> ./../avm2`).
   Keeping the old names means this repo *and* every unforked package that
   imports them (awayfl-player, swf-loader, …) resolve to the one fork.
@@ -101,7 +107,7 @@ How they get into the bundle:
 ## Building
 
 ```sh
-# once per checkout, in each of ../avm1, ../avm2, ../graphics, ../playerglobal, ../scene
+# once per checkout, in each of ../avm1, ../avm2, ../graphics, ../playerglobal, ../renderer, ../scene
 npx yarn@1 install --frozen-lockfile
 
 npm install          # links the checkouts and builds their dist/ (prepare → tsc:build)
@@ -127,13 +133,14 @@ Gotchas:
 
 Edit the forked packages in their own checkouts, not in `node_modules`:
 
-1. Edit `lib/**/*.ts` in `../avm1`, `../avm2`, `../graphics`, `../playerglobal` or `../scene`
+1. Edit `lib/**/*.ts` in the checkout (`../avm1`, `../avm2`, `../graphics`, `../playerglobal`,
+   `../renderer` or `../scene`)
    (commit there, on a branch merged into its `main`)
 2. `npm run tsc:build` in that checkout (or `npm run watch` while iterating;
    `tsc:build` ignores the type errors described below, so JS still emits)
 3. Rebuild the runtime here and test
 
-Packages that aren't forked yet (swf-loader, core, renderer, …) need forking
+Packages that aren't forked yet (swf-loader, core, stage, materials, …) need forking
 into afterswf first, then adding as another `file:` alias plus a checkout.
 
 Caveat: graphics and playerglobal report dozens of type errors against the
@@ -166,8 +173,10 @@ current packages here.
   `setTimeout`, i.e. most app `init()`s) are swallowed by an empty `catch {}`
   in playerglobal's Timer tick — a stalled app with a clean console usually
   means a swallowed throw. Instrument that catch when hunting.
-- Flash clamps alpha parameters to [0, 1]; AS2-era content passes 0-100.
-  Anywhere alpha flows into rendering unclamped, colours come out wrong.
+- Flash clamps alpha parameters to [0, 1], and colour transform results per
+  channel; content can still pass alphas above 1 (0-100 percentages from
+  AS2-era habits). Anywhere such a value reaches rendering unclamped, colours
+  come out wrong (see the renderer fix).
 - Runtime-drawn strokes only get joint/cap styles via the triangle
   tessellation route (see the graphics fix); GPU LineElements are
   per-segment quads and cannot form joints.

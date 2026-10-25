@@ -30,7 +30,7 @@
     "@awayjs/core": "^0.9.44",
     "@awayjs/graphics": "file:../graphics",
     "@awayjs/materials": "^0.6.16",
-    "@awayjs/renderer": "^0.11.63",
+    "@awayjs/renderer": "file:../renderer",
     "@awayjs/scene": "file:../scene",
     "@awayjs/stage": "^0.11.138",
     "@awayjs/view": "^0.6.61",
@@ -60,7 +60,7 @@
     "@awayjs/core": "v0.1.4",
     "@awayjs/graphics": "v0.5.101",
     "@awayjs/materials": "v0.1.4",
-    "@awayjs/renderer": "v0.1.4",
+    "@awayjs/renderer": "v0.11.99",
     "@awayjs/scene": "v0.13.325",
     "@awayjs/stage": "v0.1.4",
     "@awayjs/view": "v0.1.4"
