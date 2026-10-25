@@ -9,7 +9,8 @@
     "prebuild": "npm run clean && npm run static",
     "build": "rollup -c --bundleConfigAsCjs",
     "version": " npm run build",
-    "postversion": "git commit -a -m Build && git push origin --all && git push origin --tags"
+    "postversion": "git commit -a -m Build && git push origin --all && git push origin --tags",
+    "postinstall": "patch-package"
   },
   "keywords": [
     "Flash",
@@ -44,11 +45,14 @@
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-replace": "^5.0.5",
     "@rollup/plugin-terser": "^0.4.4",
-    "rollup-plugin-typescript2": "^0.36.0",
+    "@rollup/plugin-typescript": "^12.3.0",
+    "@types/wicg-file-system-access": "^2023.10.7",
     "copyfiles": "^2.4.1",
+    "patch-package": "^8.0.1",
     "rimraf": "^5.0.5",
-    "rollup": "^4.6.1",
-    "typescript": "^5.3.2"
+    "rollup": "4.6.1",
+    "rollup-plugin-typescript2": "^0.36.0",
+    "typescript": "5.3.3"
   },
   "lastUsedTags": {
     "@awayfl/avm1": "v0.2.181",

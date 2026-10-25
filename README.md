@@ -2,6 +2,43 @@ AwayFL Embedded Player
 ==================
 AwayFL helps you save your Flash games and keep them running after 2020!
 
+> **Fork notes (feat/net):** this fork adds Flash Remoting (AMF-over-HTTP) support and
+> several runtime fixes, applied to the `@awayfl/*` dependencies via
+> [`patch-package`](https://www.npmjs.com/package/patch-package) (see [`patches/`](./patches)
+> — each patch modifies both the package's `lib/*.ts` source, ready for an upstream PR,
+> and the compiled `dist/lib/*.js` that this repo bundles):
+>
+> * **`@awayfl/playerglobal`**
+>   * `flash.net.NetConnection`: working `connect()`/`call()` for HTTP(S) AMF remoting
+>     gateways (Zend_Amf, AMFPHP, …). Arguments and results are serialised with the AVM2
+>     ByteArray AMF codec; only the remoting packet envelope is hand-written. Faults are
+>     routed to `Responder.status` / `NetConnection.Call.Failed`. Debug logging via
+>     `self.__AWAYFL_AMF_DEBUG = true`.
+>   * `flash.net.Responder`: `invokeResult`/`invokeStatus` helpers.
+>   * `flash.ui.MouseCursorData`: linked (fresh data-holder implementation) so content
+>     using `Mouse.registerCursor` no longer dies with "Class native is not defined".
+>   * `EventDispatcherBase`: `event.currentTarget` now reports the aggregation target
+>     (`new EventDispatcher(target)`) during dispatch, matching Flash — GreenSock event
+>     handlers rely on this.
+>   * `DisplayObjectContainer.removeChild`: no longer throws #2025 when the internal
+>     scene graph has already detached the child — the throw could erupt through a frame
+>     callback and kill the ticker.
+> * **`@awayjs/graphics`**
+>   * Thick strokes (>1.5px, non-hairline) are tessellated to triangles via the
+>     existing (previously unused) `getTriangleElements`, so `lineStyle` joint
+>     styles (miter/bevel/round) and caps actually apply. The GPU-expanded
+>     LineElements path draws each segment as an independent quad and leaves a
+>     notch at every corner of a polyline.
+> * **`@awayfl/avm2`**
+>   * `Proxy` (flash.utils.Proxy): trap dispatch now finds subclass overrides whose
+>     traits were mangled into the public namespace (`$Bg…`) instead of the flash_proxy
+>     namespace — previously `flash_proxy override function callProperty` etc. were
+>     unreachable and dynamic property access threw #2088–#2096.
+>
+> Build toolchain: `rollup-plugin-typescript2` was replaced with the official
+> `@rollup/plugin-typescript` (rpt2 fails under current Node/rollup), and rollup /
+> typescript are pinned to known-good versions.
+
 Check your game on:
 https://awayfl.org/swf-tester/
 
