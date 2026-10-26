@@ -30,6 +30,7 @@ better drop-in replacement for the original SWFObject.
 | Event targets | Events from an aggregated `EventDispatcher` report the right `currentTarget`, which GreenSock relies on | [playerglobal](https://github.com/afterswf/playerglobal) |
 | Mouse cursors | `flash.ui.MouseCursorData` is available, so `Mouse.registerCursor` works | [playerglobal](https://github.com/afterswf/playerglobal) |
 | Removing children | `removeChild` no longer throws error #2025 for children that have already been detached internally, which could stop playback | [playerglobal](https://github.com/afterswf/playerglobal) |
+| AS1/2 | SWFs loaded with `loadMovie` use their own symbols, `setNewTextFormat` only changes the properties that are set, and the drawing API no longer throws errors | [avm1](https://github.com/afterswf/avm1) |
 
 ### Using it as a module
 
