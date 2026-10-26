@@ -60,6 +60,14 @@ export class Player extends AVMStage {
             this.addEventListener(AVMEvent.AVM_COMPLETE, () => this.color = stageColor);
         }
 
+        if (!this._gameConfig.backgroundColor) {
+            // the page shows through while loading, then, as in Flash, the stage
+            // colour fills any space around the scaled stage
+            this.addEventListener(AVMEvent.AVM_COMPLETE, () => {
+                document.body.style.backgroundColor = '#' + (this.color & 0xffffff).toString(16).padStart(6, '0');
+            });
+        }
+
         bridgeExternalInterface();
 
         this.registerAVMStageHandler( new AVM1Handler());

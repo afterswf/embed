@@ -31,7 +31,7 @@ almost no runtime code itself:
   playerglobal's `LoaderInfo.parameters`
 - `src/externalInterface.ts` — points swf-loader's `ExternalInterfaceService`
   at the host page, so `ExternalInterface` reaches it synchronously
-- `static/` → `dist/assets/` (playerglobal builtins ABCs, fonts.swf, splash)
+- `static/` → `dist/assets/` (playerglobal builtins ABCs, fonts.swf)
 
 Runtime bugs are almost never in this repo — they're in the dependency
 packages. This fork's fixes live in the afterswf forks of six of them

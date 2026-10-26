@@ -15,6 +15,7 @@ better drop-in replacement for the original SWFObject.
 | Flash parameters | `flashvars`, `bgcolor`, `scale` and `salign` work as in Flash; others, such as `wmode`, are accepted and ignored. Attributes such as `id`, `class` and `name` are kept |
 | ExternalInterface | `ExternalInterface.call()` in AS2 and AS3 runs in the page, and functions added with `addCallback()` become methods of the player element, with their return values |
 | Load errors | Errors loading a SWF fire the player element's `error` event |
+| Loading screen | A plain loading bar in the page's text colour on a transparent background, instead of the AwayFL splash. Once loaded, the stage colour fills any space around the stage, as in Flash. Set `progress` to `false` to hide the bar, or `splash` to an image URL to show one |
 
 ### More advanced AS3 content
 

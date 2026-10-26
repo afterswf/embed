@@ -14,13 +14,12 @@ interface IAwayPlayer {
 // rollup turns import.meta.url into document.currentScript's src in the classic
 // script build; in the ES module build it's the module's own URL
 const scriptBaseUrl = new URL('.', import.meta.url).href;
+// a plain bar across the middle; its colours come from the element's text colour
 const defaultProgress = {
     "direction": "lr",
-    "back": "#130d02",
-    "line": "#f29f01",
     "rect": [
         0.25,
-        0.77,
+        0.495,
         0.5,
         0.01
     ]
@@ -54,10 +53,13 @@ export interface IBindingConfig {
      */
     flashvars?: string | {[name: string]: any};
     splash?: string | boolean,
+    /**
+     * @description The loading bar, or false for none. Its colours default to the element's text colour
+     */
     progress?: boolean | {
-		back: string;
-		rect: [number, number, number, number],
-		line: string;
+		back?: string;
+		rect?: [number, number, number, number],
+		line?: string;
 		direction?: 'lr' | 'tb'
 	},
 
@@ -168,10 +170,11 @@ export class AwayPlayerComponent extends HTMLElement {
         autoplay: {required: false, default: true},
         hideBeforeLoad: {required: false, default: false},
         maxStageScale: {required: false, default: undefined},
-        backgroundColor: {required: false, default: 'black'},
+        // transparent while loading, then the stage colour, as in Flash
+        backgroundColor: {required: false},
         bgcolor: {required: false},
         flashvars: {required: false},
-        // defaults to the splash in runtimeBaseUrl's assets
+        // an image to show while loading
         splash: {required: false},
         progress: {required: false, default: defaultProgress},
 
@@ -304,6 +307,27 @@ export class AwayPlayerComponent extends HTMLElement {
 
     }
 
+    /**
+     * The loading bar, in the element's text colour on a fainter track unless
+     * colours are given, so it suits the page it's on
+     */
+    _progressConfig() {
+        const progress = this._runConfig.progress;
+
+        if (!progress) {
+            return false;
+        }
+
+        const color = getComputedStyle(this).color;
+
+        return {
+            line: color,
+            back: `color-mix(in srgb, ${color} 20%, transparent)`,
+            ...defaultProgress,
+            ...(typeof progress === 'object' ? progress : {}),
+        };
+    }
+
     _buildTemplate(frame: HTMLIFrameElement): string {
         const t: string = template;
         const urls = this._getRuntimeUrl();
@@ -313,7 +337,7 @@ export class AwayPlayerComponent extends HTMLElement {
             height: frame.clientHeight,
             backgroundColor: this._runConfig.backgroundColor,
             splash: this._runConfig.splash,
-            progress: this._runConfig.progress,
+            progress: this._progressConfig(),
             runtime: [urls.runtime],
             binary: [{
                 path: this._runConfig.src,
@@ -423,10 +447,6 @@ export class AwayPlayerComponent extends HTMLElement {
         // absolute and ending in a slash, so the runtime's files resolve inside it
         config.runtimeBaseUrl = new URL(config.runtimeBaseUrl.replace(/\/?$/, '/'), document.baseURI).href;
 
-        if (config.splash === undefined) {
-            config.splash = new URL('assets/splash.jpg', config.runtimeBaseUrl).href;
-        }
-
         config.scaleMode = SCALE_MODES[('' + config.scaleMode).toLowerCase()] || config.scaleMode;
 
         if (config.stageAlign) {
@@ -466,6 +486,8 @@ export class AwayPlayerComponent extends HTMLElement {
                 width: 100%;
                 height: 100%;
                 border: none;
+                /* matches the frame's own document, or browsers make the frame opaque */
+                color-scheme: light;
             }
             `;
     }
