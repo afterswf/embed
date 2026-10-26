@@ -1,6 +1,6 @@
 {
   "name": "@afterswf/embed",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "AfterSWF: plays Flash content in the browser as a drop-in replacement for SWFObject, based on AwayFL",
   "main": "dist/embed.js",
   "module": "dist/embed.mjs",
@@ -79,16 +79,16 @@
     "typescript": "5.3.3"
   },
   "lastUsedTags": {
-    "@awayfl/avm1": "v0.2.181",
+    "@awayfl/avm1": "v0.2.182",
     "@awayfl/avm2": "v0.2.241",
     "@awayfl/awayfl-player": "v0.1.4",
-    "@awayfl/playerglobal": "v0.2.460",
+    "@awayfl/playerglobal": "v0.2.461",
     "@awayfl/swf-loader": "v0.1.4",
     "@awayjs/core": "v0.1.4",
     "@awayjs/graphics": "v0.5.101",
     "@awayjs/materials": "v0.1.4",
     "@awayjs/renderer": "v0.11.99",
-    "@awayjs/scene": "v0.13.325",
+    "@awayjs/scene": "v0.13.326",
     "@awayjs/stage": "v0.1.4",
     "@awayjs/view": "v0.1.4"
   }
