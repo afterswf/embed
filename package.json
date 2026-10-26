@@ -26,8 +26,9 @@
     "clean": "rimraf --glob ./dist/*",
     "static": "copyfiles -u 1 './static/**/*' ./dist/assets/",
     "prebuild": "npm run clean && npm run static",
-    "build": "rollup -c --bundleConfigAsCjs",
-    "version": " npm run build"
+    "build": "rollup -c --bundleConfigAsCjs --forceExit",
+    "version": "npm run build && git add -A dist HISTORY.txt",
+    "prepublishOnly": "node bumpIfPublished.mjs"
   },
   "keywords": [
     "Flash",

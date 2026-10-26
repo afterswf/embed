@@ -28,9 +28,10 @@ git merge upstream/dev    # resolve any conflicts, keeping our fixes
 npx yarn@1 install
 ```
 
-The forks keep upstream's version numbers, so a merge brings in upstream's new version. npm needs a new
-version for every publish, so if a fork has changed but upstream hasn't released, bump it with
-`npm version patch`. The next upstream merge may then need to skip ahead to a higher version.
+The forks follow upstream's version numbers. If `version` conflicts in `package.json`, keep whichever is
+higher, ours or upstream's, so versions never go backwards. Publishing then bumps the patch version (see
+below). Don't add suffixes such as `-afterswf.1`: they make pre-release versions, which sort before the
+version they're based on and which version ranges such as `^0.13.325` don't match.
 
 ## 2. Test them together in embed
 
@@ -44,13 +45,20 @@ Then test against real content, e.g. the reference app described in [AGENTS.md](
 
 ## 3. Publish the forks that changed
 
-In dependency order, as each fork's `peerDependencies` point at the forks before it:
+Every repo publishes the same way, from a clean working tree:
 
 ```sh
-# renderer, graphics, scene, avm2, avm1, playerglobal
-npm publish       # prepublishOnly runs the full build, including the UMD bundle
+npm publish
 git push --follow-tags
 ```
+
+If the current version is already on npm, `npm publish` first bumps the patch version with
+`npm version patch`, which commits and tags it (and in embed, rebuilds and commits `dist/`). A version
+that isn't on npm yet, such as one you've bumped by hand (`npm version minor` for a breaking change) or one
+left by a failed publish, is published as it is. `npm publish --dry-run` doesn't bump anything.
+
+Publish the forks in dependency order, as each fork's `peerDependencies` point at the forks before it:
+renderer, graphics, scene, avm2, avm1, playerglobal.
 
 If a fork now needs a newer version of another fork, raise the minimum in its `peerDependencies` and
 `devDependencies` (e.g. `"@awayjs/scene": "npm:@afterswf/scene@^0.13.326"`) before publishing it.
@@ -58,7 +66,6 @@ If a fork now needs a newer version of another fork, raise the minimum in its `p
 ## 4. Publish embed
 
 ```sh
-npm version patch    # rebuilds dist/ and commits it, with a tag
 npm publish
 git push --follow-tags
 ```
@@ -67,7 +74,6 @@ git push --follow-tags
 
 ```sh
 cd ../react
-npm version patch
 npm publish
 git push --follow-tags
 ```

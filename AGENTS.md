@@ -123,10 +123,10 @@ npx rollup -c --bundleConfigAsCjs --runtime   # runtime.js only (~12 s) — use 
 
 Gotchas:
 
-- **rollup lingers after writing the bundles** (open handle somewhere; the
-  process sits at 0% CPU and never exits). The output is complete once
+- **rollup can linger after writing the bundles** (open handle somewhere; the
+  process sits at 0% CPU and never exits). `npm run build` passes
+  `--forceExit`; when running rollup directly, the output is complete once
   "created ./dist/runtime.js" is printed — `pkill -f 'rollup -c'` and move on.
-  Don't chain `build && test` and expect it to proceed.
 - **Toolchain is pinned exactly** (`rollup@4.6.1`, `typescript@5.3.3`,
   official `@rollup/plugin-typescript`). History: the original
   `rollup-plugin-typescript2` is unmaintained and fails under current
@@ -147,6 +147,9 @@ self-contained, so its `file:../` specs don't affect people installing it.
 `dist/` is committed and rebuilt by `npm version`. The forks don't commit
 `dist/`/`bundle/`; their `prepublishOnly` runs the full build (tsc + the UMD
 bundle that `main` points at). All have `publishConfig.access: public`.
+Every repo's `prepublishOnly` first runs `bumpIfPublished.mjs`, which runs
+`npm version patch` when the current version is already on npm (see
+[RELEASING.md](./RELEASING.md) for the version rules).
 Publish the forks in dependency order (renderer → graphics → scene → avm2 →
 avm1 → playerglobal), then embed.
 
