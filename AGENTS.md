@@ -46,7 +46,16 @@ The fixes are on `main` of the [afterswf](https://github.com/afterswf) forks
 - **avm1** — FlashVars and the SWF URL's query string become `_level0`
   variables before any ActionScript runs (so `#initclip` code sees them);
   AS2 `ExternalInterface` goes through swf-loader's `ExternalInterfaceService`
-  like AS3's, converting values both ways.
+  like AS3's, converting values both ways. SWFs loaded with `loadMovie` get
+  their own `AVM1SceneGraphFactory` (symbol IDs are per SWF, so a shared one
+  gave a loaded SWF the main SWF's symbols); `setNewTextFormat` merges like
+  `setTextFormat`; `updateGraphics()` exists (scene calls it; avm1's
+  `tsc || exit 0` build hid the type error); `Mouse.onMouseWheel` is
+  broadcast.
+- **scene** (input) — Tab/Shift+Tab move focus between tab-enabled objects
+  via `TabPicker` (keyboard focus selects a field's text); wheel events use
+  the standard `wheel` event, reach the stage like mouse moves, and carry
+  Flash's `delta` (whole lines, 3 a notch, positive up).
 - **playerglobal** — `lineStyle` maps AS3's caps/joints strings to
   `@awayjs/graphics`' numeric `CapsStyle`/`JointStyle` (they were passed
   through as strings, so every AS3 thick stroke got bevel joints and no
@@ -61,7 +70,7 @@ The fixes are on `main` of the [afterswf](https://github.com/afterswf) forks
   `removeChild` warns instead of throwing #2025 (ticker-killer fix);
   `Graphics.lineStyle` clamps alpha to [0,1] like Flash (`beginFill`
   already clamped, strokes didn't; see renderer for why alphas above 1
-  matter).
+  matter). `tabEnabled`/`tabIndex` pass through to the adaptee (were stubs).
 - **graphics** — thick strokes tessellated to triangles (orphaned
   `getTriangleElements`) so lineStyle joints/caps apply; the default
   LineElements path cannot form joints (per-segment quads).
@@ -105,6 +114,20 @@ How they get into the bundle:
   `tsconfig.json` `paths` does the same for type-checking — without these
   the bundle gets duplicate copies (and TS reports bogus `IAVMHandler`
   mismatches between the two `@awayjs/scene`s).
+Known gaps, for another day:
+
+- **Stage alignment** (`salign`, `Stage.align`) does nothing: swf-loader's
+  `AVMStage.resizeStageInternal` always centres a scaled stage, `noScale`
+  is always top-left, and `exactFit` crops like `noBorder`. It logs "Stage:
+  only implemented StageAlign is TOP_LEFT" on every resize, as avm1 sets
+  `align = 'T'`. Needs the `afterswf/swf-loader` fork (cloned to
+  `../swf-loader`, not linked yet); don't silence it from avm1, as AS1/2's
+  default should be centred (`''`).
+- **Password fields** show their text: scene's `TextField.displayAsPassword`
+  is stored but never used.
+- **Mouse wheel** over the player also scrolls a scrollable page; Flash
+  usually stopped that. Only prevent it for SWFs that listen for the wheel.
+
 - Upstream PR branches exist for all three fix sets (2026-07-10):
   - `awayfl/playerglobal` ← `feat/amf-remoting-and-runtime-fixes` (#25)
   - `awayfl/avm2` ← `fix/proxy-public-mangled-trap-overrides` (#13)

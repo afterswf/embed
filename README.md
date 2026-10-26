@@ -12,7 +12,7 @@ better drop-in replacement for the original SWFObject.
 | SWFObject 2.x | `swfobject` (and `swfObject`) supports `embedSWF`, `registerObject`, `createSWF`, `removeSWF`, `getObjectById`, `hasFlashPlayerVersion`, `getFlashPlayerVersion` (which reports Flash Player 32), `addDomLoadEvent`, `addLoadEvent` and `getQueryParamValue`, with SWFObject's callback behaviour |
 | SWFObject 1.5 | `new SWFObject(swf, id, width, height, version, bgcolor)`, with `addParam`, `addVariable` and `write` |
 | Hard-coded embeds | Flash `<object>` and `<embed>` markup is replaced with players, including markup added after the page has loaded |
-| Flash parameters | `flashvars`, `bgcolor`, `scale` and `salign` work as in Flash; others, such as `wmode`, are accepted and ignored. Attributes such as `id`, `class` and `name` are kept |
+| Flash parameters | `flashvars`, `bgcolor` and `scale` work as in Flash, except that `exactFit` crops like `noBorder`; others, such as `salign` and `wmode`, are accepted and ignored. Attributes such as `id`, `class` and `name` are kept |
 | ExternalInterface | `ExternalInterface.call()` in AS2 and AS3 runs in the page, and functions added with `addCallback()` become methods of the player element, with their return values |
 | Load errors | Errors loading a SWF fire the player element's `error` event |
 | Loading screen | A plain loading bar in the page's text colour on a transparent background, instead of the AwayFL splash. Once loaded, the stage colour fills any space around the stage, as in Flash. Set `progress` to `false` to hide the bar, or `splash` to an image URL to show one |
@@ -102,7 +102,7 @@ There are 3 main ways to use AwayFL on your site:
     * Hard-coded Flash `<object>` and `<embed>` markup is replaced with players too, including markup added to the page later. To turn this off, set `AWAY_EMBED_CFG.autoUpgrade = false`.
     * Flash parameters (`<param>`s, SWFObject's `params`, or `<embed>` attributes):
       * `flashvars` become `loaderInfo.parameters` in AS3 and `_root` variables in AS1/2, as do any query string parameters in the SWF's URL
-      * `bgcolor` overrides the SWF's background colour, and `scale` and `salign` set the stage's scale mode and alignment
+      * `bgcolor` overrides the SWF's background colour, and `scale` sets the stage's scale mode (`salign` isn't supported yet, so the stage is centred)
       * others, such as `wmode`, `allowScriptAccess` and `quality`, are accepted and ignored
     * Attributes such as `id`, `class` (or SWFObject's `styleclass`), `name` and `style` are copied onto the `<awayfl-player>` element.
     * `ExternalInterface` (AS2 and AS3) connects to the page as it did with the Flash plugin: `ExternalInterface.call()` runs in the page, and functions added with `ExternalInterface.addCallback()` become methods of the player element, e.g. `swfobject.getObjectById('game').myCallback()`.
